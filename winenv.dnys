@@ -1,0 +1,50 @@
+# Show environment variables via GUI
+
+require "strings";
+require "forms";
+
+global frmMain int;
+global bres bool;
+global envcont string;
+
+wnd_spawnform "frmMain" "Windows Environment Variables" 200 300 500 350 frmMain;
+
+wnd_isformvalid frmMain bres;
+
+if (%bres, -eq, false) {
+    print "Failed to create form.";
+    pause;
+    exit;
+};
+
+wnd_spawnlistview "frmMain" "lvVariables" 10 10 467 295;
+wnd_lvaddcategory "frmMain" "lvVariables" "Name" 225 true;
+wnd_lvaddcategory "frmMain" "lvVariables" "Value" 220 true;
+
+sys {set} envcont;
+
+s_tokenize "%envcont" "%CR%LF" splittedvars;
+
+global szVarName string;
+global szVarValue string;
+global numTokenIndex int;
+
+for (i, 0, %splittedvars.count, -inc) {
+    s_find "%splittedvars[%i]" "=" numTokenIndex;
+    
+    if (%numTokenIndex, -gr, 0) {
+        s_substr "%splittedvars[%i]" 0 %numTokenIndex szVarName;
+
+        ++ numTokenIndex;
+        s_substr "%splittedvars[%i]" %numTokenIndex -1 szVarValue;
+
+        wnd_lvsetitemtext "frmMain" "lvVariables" "%szVarName" 0 bres;
+        wnd_lvsetsubitemtext "frmMain" "lvVariables" 0 "%szVarValue" 1 bres;
+    };
+};
+
+while (%bres, -eq, true) {
+    wnd_process;
+
+    wnd_isformvalid frmMain bres;
+};

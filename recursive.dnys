@@ -1,0 +1,19 @@
+# Example script code
+# Demonstrate recursive function calls
+
+const MAX_COUNT int <= 10;
+
+function recursive void(count int)
+{
+  if (%count, -ls, %MAX_COUNT) {
+    ++ count;
+    print "Count value: %count";
+    call recursive(%count) => void;
+  };
+};
+
+call recursive(0) => void;
+
+print "Done.";
+
+pause;

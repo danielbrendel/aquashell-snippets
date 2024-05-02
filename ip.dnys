@@ -1,0 +1,9 @@
+# Get Internet IP address of this machine
+
+const SERVICE_URL string <= "https://www.danielbrendel.com/ip.php";
+
+global ipaddr string;
+
+sys {curl "%SERVICE_URL" --silent} ipaddr;
+
+print "IP address: %ipaddr";

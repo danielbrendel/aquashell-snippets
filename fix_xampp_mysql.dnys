@@ -1,0 +1,56 @@
+# Fix XAMPP MySQL error: Repeatedly unexpected MySQL shutdown
+# More info: https://stackoverflow.com/a/61859561
+
+require "array";
+require "fileio";
+
+const MYSQL_PATH string <= "C:\Users\Danny\Desktop\mysql";
+
+global checkdir bool;
+global enumres bool;
+global copyres bool;
+global checkfile bool;
+
+static_array arrExcludedFolders string (
+	"mysql", 
+	"performance_schema", 
+	"phpmyadmin", 
+	"test"
+);
+
+print "Fixing files and folders...";
+
+dexists "%MYSQL_PATH\data_old" checkdir;
+if (%checkdir, -eq, true) {
+    sys {RMDIR /S /Q %MYSQL_PATH\data_old};
+};
+
+sys {move /Y %MYSQL_PATH\data %MYSQL_PATH\data_old};
+sys {xcopy /e /v %MYSQL_PATH\backup %MYSQL_PATH\data\};
+
+function CopyDbFolders int(baseObject string, iteratedObject string)
+{
+    local dirtype bool;
+    
+    fdisdir "%baseObject%iteratedObject" dirtype;
+    if (%dirtype, -eq, true) {
+        for (count, 0, %arrExcludedFolders.length, -inc) {
+            if (%iteratedObject, -nt, %arrExcludedFolders[%count]) {
+                sys {xcopy /e /v /y %baseObject%iteratedObject %MYSQL_PATH\data\%iteratedObject\};
+            };
+        };
+    };
+
+    result 1;
+};
+
+denum {%MYSQL_PATH\data_old\} "*.*" "CopyDbFolders" enumres;
+
+fexists "%MYSQL_PATH\data\ibdata1" checkfile;
+if (%checkfile, -eq, true) {
+    fremove "%MYSQL_PATH\data\ibdata1" void;
+};
+
+fcopy "%MYSQL_PATH\data_old\ibdata1" "%MYSQL_PATH\data\ibdata1" copyres;
+
+print "Done.";

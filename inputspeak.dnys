@@ -1,0 +1,21 @@
+# Speak text entered via GUI input box
+
+require "inputbox";
+require "speech";
+
+const SPEECH_VOLUME int <= 100;
+
+function prompt_and_speak void()
+{
+    local text string;
+
+    inputbox "Speech Prompt" "Enter a text to speak" "Hello World!" 200 300 text;
+    
+    if (%text, -nt, "") {
+        spk_setvolume %SPEECH_VOLUME;
+        spk_speak "%text";
+    };
+};
+
+
+call prompt_and_speak() => void;

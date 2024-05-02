@@ -1,0 +1,15 @@
+# Get weekday of given or current date
+
+function weekday void(date string) {
+	local dayname string;
+	
+	if (%date, -eq, "") {
+		fmtdatetime "%Y-%m-%d" date;
+	};
+	
+	sys {php -r "echo date('l', strtotime('%date'));"} dayname;
+	
+	print "%dayname";
+};
+
+call weekday("tomorrow") => void;

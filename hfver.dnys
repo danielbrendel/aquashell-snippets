@@ -1,0 +1,46 @@
+# Print HortusFox version
+
+const HF_ENDPOINT string <= "https://www.hortusfox.com/software/version";
+const HF_TOK_VERSION string <= "version";
+
+require "strings";
+
+function query_hortusfox_version string()
+{
+	local response string;
+	local reslen int;
+	local verpos int;
+	local verlen int;
+	local vertok string;
+
+	result "";
+
+	sys {curl "%HF_ENDPOINT" --silent} response;
+
+	s_replace response "{" "";
+	s_replace response "}" "";
+
+	s_getlen "%HF_TOK_VERSION" verlen;
+	s_getlen "%response" reslen;
+	
+	s_find "%response" "%HF_TOK_VERSION" verpos;
+	
+	if (%verpos, -gr, 0) {
+		+= verpos %verlen;
+		+= verpos 3;
+		
+		-= reslen %verpos;
+		-- reslen;
+		
+		s_substr "%response" %verpos %reslen vertok;
+		
+		result "%vertok";
+	};
+};
+
+global szHortusFoxVersion string;
+
+call query_hortusfox_version() => szHortusFoxVersion;
+print %szHortusFoxVersion;
+
+unset szHortusFoxVersion;

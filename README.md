@@ -1,0 +1,1 @@
+# Useful snippets for AquaShell scripting and automation shell

@@ -1,0 +1,47 @@
+# Check if internet is available
+
+require "array";
+require "strings";
+
+static_array arrDomains string (
+	"https://www.google.com", 
+	"https://www.microsoft.com", 
+	"https://store.steampowered.com"
+);
+
+global checkresult bool;
+
+function check_availability bool(domain string)
+{
+    local response string;
+    local httprespos int;
+
+    result false;
+
+    print "Checking via domain: %domain";
+
+	sys {curl "%domain" -X HEAD -I --silent} response;
+
+    s_find "%response" "HTTP/1.1 200 OK" httprespos;
+    
+    if (%httprespos, -eq, 0) {
+        result true;
+    };
+};
+
+global resultcount int;
+set resultcount <= 0;
+
+for (i, 0, %arrDomains.length, -inc) {
+	call check_availability("%arrDomains[%i]") => checkresult;
+
+    if (%checkresult, -eq, true) {
+        ++ resultcount;
+    };
+};
+
+if (%resultcount, -gr, 0) {
+    print "Internet is available (%resultcount/%arrDomains.length succeeded).";
+} else {
+    print "All connection attempts failed.";
+};

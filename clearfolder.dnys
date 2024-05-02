@@ -1,0 +1,57 @@
+# Remove all files and folders in a directory
+
+require "array";
+require "fileio";
+require "textinput";
+
+dynamic_array arrFiles string 1 ("");
+dynamic_array arrFolders string 1 ("");
+
+function EnumObjects int(baseObject string, iteratedObject string)
+{
+    local dirtype bool;
+    
+    fdisdir "%baseObject%iteratedObject" dirtype;
+    if (%dirtype, -eq, true) {
+        item_append arrFolders "%baseObject%iteratedObject";
+        denum {%baseObject%iteratedObject\} "*.*" "EnumObjects" void;
+    } else {
+        item_append arrFiles "%baseObject%iteratedObject";
+    };
+
+    result 1;
+};
+
+function ClearFiles void()
+{
+    local fremres bool;
+
+    for (i, 1, %arrFiles.length, -inc) {
+        print "Clearing file: %arrFiles[%i]";
+        fremove "%arrFiles[%i]" fremres;
+    };
+};
+
+function ClearFolders void()
+{
+    local dremres bool;
+
+    for (i, 1, %arrFolders.length, -inc) {
+        print "Clearing folder: %arrFolders[%i]";
+        dremove "%arrFolders[%i]" dremres;
+    };
+};
+
+global inputdir string;
+global enumres bool;
+
+input inputdir "Please enter a folder to be entirely cleared: ";
+
+print "Clearing entire folder: %inputdir";
+
+denum "%inputdir" "*.*" "EnumObjects" enumres;
+
+call ClearFiles() => void;
+call ClearFolders() => void;
+
+print "Done.";

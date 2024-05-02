@@ -1,0 +1,29 @@
+# Quickly generate BCRYPT password via PHP
+
+require "strings";
+require "miscutils";
+
+const C_TEST_PASSWORD string <= "test";
+
+global expression string;
+global exprlen int;
+
+set expression <= "%2";
+
+s_getlen "%expression" exprlen;
+if (%exprlen, -ls, 3) {
+	set expression <= "%C_TEST_PASSWORD";
+};
+
+function genenrate_password void()
+{
+	local output string;
+	
+	sys {php -r "echo password_hash('%expression', PASSWORD_BCRYPT);"} output;
+	print "%output";
+	
+	clpb_setstring "%output";
+	print "Copied to clipboard!";
+};
+
+call genenrate_password() => void;
