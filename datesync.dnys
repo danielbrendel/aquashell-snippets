@@ -1,0 +1,13 @@
+# Sync local time with localized world time
+# Might require administrative privileges
+
+function synchronize_datetime void()
+{
+	sys {w32tm /resync};
+};
+
+call synchronize_datetime() => void;
+
+if (%DNYAS_IS_INTERACTIVE_MODE, -eq, false) {
+	pause;
+};

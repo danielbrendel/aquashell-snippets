@@ -1,0 +1,35 @@
+# Time and Date related utilities
+
+function clock void() {
+	sys { timedate.cpl };
+};
+
+function time void() {
+	local curtime string;
+	fmtdatetime "%H:%M:%S" curtime;
+	print "%curtime";
+};
+
+function date void() {
+	local curdate string;
+	fmtdatetime "%Y-%m-%d" curdate;
+	print "%curdate";
+};
+
+function datetime void() {
+	local curdatetime string;
+	fmtdatetime "%Y-%m-%d %H:%M:%S" curdatetime;
+	print "%curdatetime";
+};
+
+function weekday void(date string) {
+	local dayname string;
+	
+	if (%date, -eq, "") {
+		fmtdatetime "%Y-%m-%d" date;
+	};
+	
+	sys {php -r "echo date('l', strtotime('%date'));"} dayname;
+	
+	print "%dayname";
+};

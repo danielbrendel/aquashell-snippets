@@ -3,19 +3,33 @@
 require "inputbox";
 require "speech";
 
-const SPEECH_VOLUME int <= 100;
+global inputspeakrun bool;
+set inputspeakrun <= true;
+
+global slastphrase string;
+set slastphrase <= "Hello World!";
+
+spk_setvoice "Microsoft Zira Desktop";
+spk_setvolume 100;
 
 function prompt_and_speak void()
 {
     local text string;
 
-    inputbox "Speech Prompt" "Enter a text to speak" "Hello World!" 200 300 text;
+    inputbox "Speech Prompt" "Enter a text to speak" "%slastphrase" 700 500 text;
     
     if (%text, -nt, "") {
-        spk_setvolume %SPEECH_VOLUME;
-        spk_speak "%text";
-    };
+		set slastphrase <= "%text";
+        spk_speakasync "%text";
+    } else {
+		set inputspeakrun <= false;
+	};
 };
 
+while (%inputspeakrun, -eq, true) {
+	call prompt_and_speak() => void;
+	sleep 10;
+};
 
-call prompt_and_speak() => void;
+unset inputspeakrun;
+unset slastphrase;

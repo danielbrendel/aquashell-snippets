@@ -1,0 +1,295 @@
+# Send chat messages to Heroes of the Storm via hotkeys
+#
+# This script features binding chat messages to the keys F5, F6, F7 and F8 by default
+# You can edit the chat messages via the GUI. When ingame press one of the keys and the
+# chat message that is bound to the key will be inserted. The script does also check
+# if the current foreground window is the window of the game in order to prevent that
+# the chat messages are inserted elsewhere.
+#
+# Chat messages are stored in the text file defined via the constant CONFIG_NAME.
+#
+
+require "array";
+require "auto";
+require "fileio";
+require "forms";
+require "miscutils";
+require "strings";
+
+const WND_CLASS string <= "Heroes of the Storm";
+const CONFIG_NAME string <= "hots_messages.txt";
+const FORM_TEXT string <= "HotS Chat Hotkey Manager";
+const KEY_CODE_1 int <= 116; #F5
+const KEY_CODE_2 int <= 117; #F6
+const KEY_CODE_3 int <= 118; #F7
+const KEY_CODE_4 int <= 119; #F8
+const SIMULATE_RETURN bool <= true;
+
+global bres bool;
+global brun bool;
+global currentpath string;
+global configpath string;
+global keytoggle1 bool;
+global keytoggle2 bool;
+global keytoggle3 bool;
+global keytoggle4 bool;
+global lasttimeactive bool;
+
+HWND targetwnd;
+HWND wndfg;
+
+set bres <= false;
+set brun <= true;
+set currentpath <= "";
+set configpath <= "";
+set keytoggle1 <= false;
+set keytoggle2 <= false;
+set keytoggle3 <= false;
+set keytoggle4 <= false;
+set lasttimeactive <= true;
+
+dynamic_array arrConfigItems string 4 ("", "", "", "");
+
+getscriptpath currentpath;
+
+set configpath <= {%currentpath%CONFIG_NAME};
+
+function GameWindowActive bool()
+{
+	result false;
+	
+	aut_findwindow targetwnd "%WND_CLASS" \0;
+	
+	if (%targetwnd, -gr, 0) {
+		aut_getfgwindow wndfg;
+		
+		if (%wndfg, -eq, %targetwnd) {
+			result true;
+		};
+	};
+};
+
+function btnSaveMessages_OnClick void()
+{
+    local currentitem string;
+	local checkexists bool;
+	local findstr int;
+
+    wnd_gettextboxtext frmMain txtMsg1 currentitem;
+    store_item_to_array_d "currentitem" arrConfigItems 0;
+
+    wnd_gettextboxtext frmMain txtMsg2 currentitem;
+    store_item_to_array_d "currentitem" arrConfigItems 1;
+
+    wnd_gettextboxtext frmMain txtMsg3 currentitem;
+    store_item_to_array_d "currentitem" arrConfigItems 2;
+
+    wnd_gettextboxtext frmMain txtMsg4 currentitem;
+    store_item_to_array_d "currentitem" arrConfigItems 3;
+
+	set checkexists <= true;
+
+    sys {del /Q /F "%configpath"};
+
+    while (%checkexists, -eq, true) {
+		fexists "%configpath" checkexists;
+		sleep 1;
+	};
+
+    for (i, 0, %arrConfigItems.length, -inc) {
+        set currentitem <= "%arrConfigItems[%i]";
+        if (%currentitem, -nt, "") {
+			s_find "%currentitem" "&" findstr;
+			if (%findstr, -gre, 0) {
+				s_replace currentitem "&" "^{$AMPERSAND}";
+				s_replace currentitem "{$AMPERSAND}" "&";
+			};
+
+            sys {echo %currentitem>>"%configpath"};
+        };
+    };
+
+	print "Saved chat messages to: %configpath";
+};
+
+function btnExitScript_OnClick void()
+{
+    wnd_freeform frmMain;
+};
+
+function LoadMessages void()
+{
+    local filecontent string;
+    local chatcfgexists bool;
+
+	fexists "%configpath" chatcfgexists;
+	if (%chatcfgexists, -eq, false) {
+		sys {echo -= Go0d Luck ^& Have Fun =->>"%configpath"};
+		sys {echo -= ! G0od Game ! =->>"%configpath"};
+		sys {echo -= NiCe jOb =->>"%configpath"};
+		sys {echo -= Let us rush the core =->>"%configpath"};
+	};
+
+    sys {type "%configpath"} filecontent;
+
+    s_tokenize "%filecontent" "%CR%LF" splittedmsgs;
+    
+    item_insert arrConfigItems 0 "%splittedmsgs[0]";
+    item_insert arrConfigItems 1 "%splittedmsgs[1]";
+    item_insert arrConfigItems 2 "%splittedmsgs[2]";
+    item_insert arrConfigItems 3 "%splittedmsgs[3]";
+};
+
+function CreateWindow void()
+{
+    wnd_spawnform frmMain "%FORM_TEXT" 500 400 635 300 bres;
+
+    wnd_spawnlabel frmMain "lblKey1" 20 10 20 30 "F5: ";
+    wnd_spawntextbox frmMain "txtMsg1" 50 10 550 20 "";
+
+    wnd_spawnlabel frmMain "lblKey2" 20 50 20 30 "F6: ";
+    wnd_spawntextbox frmMain "txtMsg2" 50 50 550 20 "";
+
+    wnd_spawnlabel frmMain "lblKey3" 20 90 20 30 "F7: ";
+    wnd_spawntextbox frmMain "txtMsg3" 50 90 550 20 "";
+
+    wnd_spawnlabel frmMain "lblKey4" 20 130 20 30 "F8: ";
+    wnd_spawntextbox frmMain "txtMsg4" 50 130 550 20 "";
+
+	wnd_spawnlabel frmMain "lblWndStatus" 20 180 350 30 "";
+
+    wnd_spawnbutton frmMain "btnSaveMessages" 20 220 200 30 "Save";
+    wnd_spawnbutton frmMain "btnExitScript" 400 220 200 30 "Exit";
+
+    wnd_settextboxtext frmMain txtMsg1 "%arrConfigItems[0]";
+    wnd_settextboxtext frmMain txtMsg2 "%arrConfigItems[1]";
+    wnd_settextboxtext frmMain txtMsg3 "%arrConfigItems[2]";
+    wnd_settextboxtext frmMain txtMsg4 "%arrConfigItems[3]";
+};
+
+function SendText void(texttosend string)
+{
+	local kres bool;
+
+	print "Sending text: %texttosend ...";
+	
+	aut_sendkeystrokes %texttosend false false false kres;
+
+	if (%SIMULATE_RETURN, -eq, true) {
+		aut_sendkeystrokes {\VK_RETURN;} false false false kres;
+		aut_sendkeystrokes {\VK_RETURN;} false false false kres;
+	};
+};
+
+function CheckKey1 void()
+{
+	local kdres bool;
+	
+	aut_iskeydown %KEY_CODE_1 kdres;
+	
+	if (%kdres, -eq, true) {
+		if (%keytoggle1, -eq, false) {
+			call SendText("%arrConfigItems[0]") => void;
+		
+			set keytoggle1 <= true;
+		};
+	} else {
+		if (%keytoggle1, -eq, true) {
+			set keytoggle1 <= false;
+		};
+	};
+};
+
+function CheckKey2 void()
+{
+	local kdres bool;
+	
+	aut_iskeydown %KEY_CODE_2 kdres;
+	
+	if (%kdres, -eq, true) {
+		if (%keytoggle2, -eq, false) {
+			call SendText("%arrConfigItems[1]") => void;
+		
+			set keytoggle2 <= true;
+		};
+	} else {
+		if (%keytoggle2, -eq, true) {
+			set keytoggle2 <= false;
+		};
+	};
+};
+
+function CheckKey3 void()
+{
+	local kdres bool;
+	
+	aut_iskeydown %KEY_CODE_3 kdres;
+	
+	if (%kdres, -eq, true) {
+		if (%keytoggle3, -eq, false) {
+			call SendText("%arrConfigItems[2]") => void;
+		
+			set keytoggle3 <= true;
+		};
+	} else {
+		if (%keytoggle3, -eq, true) {
+			set keytoggle3 <= false;
+		};
+	};
+};
+
+function CheckKey4 void()
+{
+	local kdres bool;
+	
+	aut_iskeydown %KEY_CODE_4 kdres;
+	
+	if (%kdres, -eq, true) {
+		if (%keytoggle4, -eq, false) {
+			call SendText("%arrConfigItems[3]") => void;
+		
+			set keytoggle4 <= true;
+		};
+	} else {
+		if (%keytoggle4, -eq, true) {
+			set keytoggle4 <= false;
+		};
+	};
+};
+
+function UpdateGameWindowStatus void()
+{
+	local iswndactive bool;
+
+	call GameWindowActive() => iswndactive;
+	if (%iswndactive, -eq, true) {
+		if (%lasttimeactive, -eq, false) {
+			wnd_setcomptext "frmMain" "CLabel" "lblWndStatus" "Game Status: window found in foreground!";
+
+			set lasttimeactive <= true;
+		};
+	} else {
+		if (%lasttimeactive, -eq, true) {
+			wnd_setcomptext "frmMain" "CLabel" "lblWndStatus" "Game Status: window not in foreground...";
+
+			set lasttimeactive <= false;
+		};
+	};
+};
+
+call LoadMessages() => void;
+call CreateWindow() => void;
+
+while (%brun, -eq, true) {
+    call CheckKey1() => void;
+    call CheckKey2() => void;
+    call CheckKey3() => void;
+    call CheckKey4() => void;
+
+	call UpdateGameWindowStatus() => void;
+
+    wnd_process;
+    wnd_isformvalid frmMain brun;
+
+    sleep 1;
+};
