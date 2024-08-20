@@ -23,6 +23,7 @@ const KEY_CODE_1 int <= 116; #F5
 const KEY_CODE_2 int <= 117; #F6
 const KEY_CODE_3 int <= 118; #F7
 const KEY_CODE_4 int <= 119; #F8
+const KEY_CODE_5 int <= 120; #F9
 const SIMULATE_RETURN bool <= true;
 
 global bres bool;
@@ -33,6 +34,7 @@ global keytoggle1 bool;
 global keytoggle2 bool;
 global keytoggle3 bool;
 global keytoggle4 bool;
+global keytoggle5 bool;
 global lasttimeactive bool;
 
 HWND targetwnd;
@@ -46,9 +48,10 @@ set keytoggle1 <= false;
 set keytoggle2 <= false;
 set keytoggle3 <= false;
 set keytoggle4 <= false;
+set keytoggle5 <= false;
 set lasttimeactive <= true;
 
-dynamic_array arrConfigItems string 4 ("", "", "", "");
+dynamic_array arrConfigItems string 5 ("", "", "", "", "");
 
 getscriptpath currentpath;
 
@@ -86,6 +89,9 @@ function btnSaveMessages_OnClick void()
 
     wnd_gettextboxtext frmMain txtMsg4 currentitem;
     store_item_to_array_d "currentitem" arrConfigItems 3;
+
+	wnd_gettextboxtext frmMain txtMsg5 currentitem;
+    store_item_to_array_d "currentitem" arrConfigItems 4;
 
 	set checkexists <= true;
 
@@ -128,6 +134,7 @@ function LoadMessages void()
 		sys {echo -= ! G0od Game ! =->>"%configpath"};
 		sys {echo -= NiCe jOb =->>"%configpath"};
 		sys {echo -= Let us rush the core =->>"%configpath"};
+		sys {echo -= Let us go to the objective! =->>"%configpath"};
 	};
 
     sys {type "%configpath"} filecontent;
@@ -138,11 +145,12 @@ function LoadMessages void()
     item_insert arrConfigItems 1 "%splittedmsgs[1]";
     item_insert arrConfigItems 2 "%splittedmsgs[2]";
     item_insert arrConfigItems 3 "%splittedmsgs[3]";
+	item_insert arrConfigItems 4 "%splittedmsgs[4]";
 };
 
 function CreateWindow void()
 {
-    wnd_spawnform frmMain "%FORM_TEXT" 500 400 635 300 bres;
+    wnd_spawnform frmMain "%FORM_TEXT" 500 400 635 330 bres;
 
     wnd_spawnlabel frmMain "lblKey1" 20 10 20 30 "F5: ";
     wnd_spawntextbox frmMain "txtMsg1" 50 10 550 20 "";
@@ -156,15 +164,19 @@ function CreateWindow void()
     wnd_spawnlabel frmMain "lblKey4" 20 130 20 30 "F8: ";
     wnd_spawntextbox frmMain "txtMsg4" 50 130 550 20 "";
 
-	wnd_spawnlabel frmMain "lblWndStatus" 20 180 350 30 "";
+	wnd_spawnlabel frmMain "lblKey5" 20 170 20 30 "F9: ";
+    wnd_spawntextbox frmMain "txtMsg5" 50 170 550 20 "";
 
-    wnd_spawnbutton frmMain "btnSaveMessages" 20 220 200 30 "Save";
-    wnd_spawnbutton frmMain "btnExitScript" 400 220 200 30 "Exit";
+	wnd_spawnlabel frmMain "lblWndStatus" 20 215 350 30 "";
+
+    wnd_spawnbutton frmMain "btnSaveMessages" 20 255 200 30 "Save";
+    wnd_spawnbutton frmMain "btnExitScript" 400 255 200 30 "Exit";
 
     wnd_settextboxtext frmMain txtMsg1 "%arrConfigItems[0]";
     wnd_settextboxtext frmMain txtMsg2 "%arrConfigItems[1]";
     wnd_settextboxtext frmMain txtMsg3 "%arrConfigItems[2]";
     wnd_settextboxtext frmMain txtMsg4 "%arrConfigItems[3]";
+	wnd_settextboxtext frmMain txtMsg5 "%arrConfigItems[4]";
 };
 
 function SendText void(texttosend string)
@@ -257,6 +269,25 @@ function CheckKey4 void()
 	};
 };
 
+function CheckKey5 void()
+{
+	local kdres bool;
+	
+	aut_iskeydown %KEY_CODE_5 kdres;
+	
+	if (%kdres, -eq, true) {
+		if (%keytoggle5, -eq, false) {
+			call SendText("%arrConfigItems[4]") => void;
+		
+			set keytoggle5 <= true;
+		};
+	} else {
+		if (%keytoggle5, -eq, true) {
+			set keytoggle5 <= false;
+		};
+	};
+};
+
 function UpdateGameWindowStatus void()
 {
 	local iswndactive bool;
@@ -285,6 +316,7 @@ while (%brun, -eq, true) {
     call CheckKey2() => void;
     call CheckKey3() => void;
     call CheckKey4() => void;
+	call CheckKey5() => void;
 
 	call UpdateGameWindowStatus() => void;
 
