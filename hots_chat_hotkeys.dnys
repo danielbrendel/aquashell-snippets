@@ -1,12 +1,16 @@
 # Send chat messages to Heroes of the Storm via hotkeys
 #
-# This script features binding chat messages to the keys F5, F6, F7 and F8 by default
-# You can edit the chat messages via the GUI. When ingame press one of the keys and the
-# chat message that is bound to the key will be inserted. The script does also check
-# if the current foreground window is the window of the game in order to prevent that
-# the chat messages are inserted elsewhere.
+# This script features binding chat messages to the keys F5, F6, F7, F8 and F9 by default.
+# Key F5 - F8 are subject to single chat messages where key F9 will be subject to a switching
+# toggle. That means you can specify a dynamic amount of chat messages that will be iterated on
+# and once the end is reached, it will be starting over from the beginning again.
+
+# You can edit the chat messages via the GUI (except switching toggles). The script does also check
+# if the current foreground window is the window of the game in order to prevent that the chat messages 
+# are inserted elsewhere.
 #
-# Chat messages are stored in the text file defined via the constant CONFIG_NAME.
+# Chat messages are stored in the text file defined via the constant CONFIG_NAME. If it does not exist
+# then the script will create a sample file that can be edited afterwards.
 #
 
 require "array";
@@ -25,6 +29,7 @@ const KEY_CODE_3 int <= 118; #F7
 const KEY_CODE_4 int <= 119; #F8
 const KEY_CODE_5 int <= 120; #F9
 const SIMULATE_RETURN bool <= true;
+const CONFIG_TOGGLE_SECTION_START int <= 4;
 
 global bres bool;
 global brun bool;
@@ -35,6 +40,8 @@ global keytoggle2 bool;
 global keytoggle3 bool;
 global keytoggle4 bool;
 global keytoggle5 bool;
+global switchcount int;
+global switchmsg string;
 global lasttimeactive bool;
 
 HWND targetwnd;
@@ -49,9 +56,11 @@ set keytoggle2 <= false;
 set keytoggle3 <= false;
 set keytoggle4 <= false;
 set keytoggle5 <= false;
+set switchcount <= %CONFIG_TOGGLE_SECTION_START;
+set switchmsg <= "";
 set lasttimeactive <= true;
 
-dynamic_array arrConfigItems string 5 ("", "", "", "", "");
+dynamic_array arrConfigItems string 1 ("");
 
 getscriptpath currentpath;
 
@@ -72,6 +81,10 @@ function GameWindowActive bool()
 	};
 };
 
+function cbHotKeyToggles_OnSelect void(newItem string)
+{
+};
+
 function btnSaveMessages_OnClick void()
 {
     local currentitem string;
@@ -89,9 +102,6 @@ function btnSaveMessages_OnClick void()
 
     wnd_gettextboxtext frmMain txtMsg4 currentitem;
     store_item_to_array_d "currentitem" arrConfigItems 3;
-
-	wnd_gettextboxtext frmMain txtMsg5 currentitem;
-    store_item_to_array_d "currentitem" arrConfigItems 4;
 
 	set checkexists <= true;
 
@@ -127,6 +137,7 @@ function LoadMessages void()
 {
     local filecontent string;
     local chatcfgexists bool;
+	local cntnumber int;
 
 	fexists "%configpath" chatcfgexists;
 	if (%chatcfgexists, -eq, false) {
@@ -134,7 +145,7 @@ function LoadMessages void()
 		sys {echo -= ! G0od Game ! =->>"%configpath"};
 		sys {echo -= NiCe jOb =->>"%configpath"};
 		sys {echo -= Let us rush the core =->>"%configpath"};
-		sys {echo -= Let us go to the objective! =->>"%configpath"};
+		sys {echo -= Please add more switching messages =->>"%configpath"};
 	};
 
     sys {type "%configpath"} filecontent;
@@ -145,11 +156,23 @@ function LoadMessages void()
     item_insert arrConfigItems 1 "%splittedmsgs[1]";
     item_insert arrConfigItems 2 "%splittedmsgs[2]";
     item_insert arrConfigItems 3 "%splittedmsgs[3]";
-	item_insert arrConfigItems 4 "%splittedmsgs[4]";
+	
+	if (%splittedmsgs.count, -gre, %CONFIG_TOGGLE_SECTION_START) {
+		for (i, %CONFIG_TOGGLE_SECTION_START, %splittedmsgs.count, -inc) {
+			item_insert arrConfigItems %i "%splittedmsgs[%i]";
+		};
+	};
+
+	set cntnumber <= %splittedmsgs.count;
+	-= cntnumber 4;
+
+	set switchmsg <= "(You have %cntnumber switching items)";
 };
 
 function CreateWindow void()
 {
+	local cbselindex int;
+
     wnd_spawnform frmMain "%FORM_TEXT" 500 400 635 330 bres;
 
     wnd_spawnlabel frmMain "lblKey1" 20 10 20 30 "F5: ";
@@ -165,7 +188,7 @@ function CreateWindow void()
     wnd_spawntextbox frmMain "txtMsg4" 50 130 550 20 "";
 
 	wnd_spawnlabel frmMain "lblKey5" 20 170 20 30 "F9: ";
-    wnd_spawntextbox frmMain "txtMsg5" 50 170 550 20 "";
+	wnd_spawncombobox frmMain "cbHotKeyToggles" 50 170 550 1500;
 
 	wnd_spawnlabel frmMain "lblWndStatus" 20 215 350 30 "";
 
@@ -176,7 +199,18 @@ function CreateWindow void()
     wnd_settextboxtext frmMain txtMsg2 "%arrConfigItems[1]";
     wnd_settextboxtext frmMain txtMsg3 "%arrConfigItems[2]";
     wnd_settextboxtext frmMain txtMsg4 "%arrConfigItems[3]";
-	wnd_settextboxtext frmMain txtMsg5 "%arrConfigItems[4]";
+
+	for (cbcnt, %CONFIG_TOGGLE_SECTION_START, %arrConfigItems.length, -inc) {
+		wnd_cbadditem frmMain cbHotKeyToggles "%arrConfigItems[%cbcnt]";
+	};
+
+	wnd_cbgetcount frmMain cbHotKeyToggles cbselindex;
+	-- cbselindex;
+
+	wnd_cbremoveitem frmMain cbHotKeyToggles %cbselindex;
+
+	wnd_cbadditem frmMain cbHotKeyToggles "%switchmsg";
+	wnd_cbselectitem frmMain cbHotKeyToggles %cbselindex;
 };
 
 function SendText void(texttosend string)
@@ -272,12 +306,21 @@ function CheckKey4 void()
 function CheckKey5 void()
 {
 	local kdres bool;
+	local fixcount int;
+
+	set fixcount <= %arrConfigItems.length;
+	-= fixcount 2;
 	
 	aut_iskeydown %KEY_CODE_5 kdres;
 	
 	if (%kdres, -eq, true) {
 		if (%keytoggle5, -eq, false) {
-			call SendText("%arrConfigItems[4]") => void;
+			call SendText("%arrConfigItems[%switchcount]") => void;
+			
+			++ switchcount;
+			if (%switchcount, -gre, %fixcount) {
+				set switchcount <= %CONFIG_TOGGLE_SECTION_START;
+			};
 		
 			set keytoggle5 <= true;
 		};
@@ -291,17 +334,24 @@ function CheckKey5 void()
 function UpdateGameWindowStatus void()
 {
 	local iswndactive bool;
+	local wndstatusmsg string;
 
 	call GameWindowActive() => iswndactive;
 	if (%iswndactive, -eq, true) {
 		if (%lasttimeactive, -eq, false) {
-			wnd_setcomptext "frmMain" "CLabel" "lblWndStatus" "Game Status: window found in foreground!";
+			set wndstatusmsg <= "window found in foreground!";
+
+			wnd_setcomptext "frmMain" "CLabel" "lblWndStatus" "Game Status: %wndstatusmsg";
+			print "Game Status: %wndstatusmsg";
 
 			set lasttimeactive <= true;
 		};
 	} else {
 		if (%lasttimeactive, -eq, true) {
-			wnd_setcomptext "frmMain" "CLabel" "lblWndStatus" "Game Status: window not in foreground...";
+			set wndstatusmsg <= "window not in foreground...";
+
+			wnd_setcomptext "frmMain" "CLabel" "lblWndStatus" "Game Status: %wndstatusmsg";
+			print "Game Status: %wndstatusmsg";
 
 			set lasttimeactive <= false;
 		};
@@ -310,6 +360,8 @@ function UpdateGameWindowStatus void()
 
 call LoadMessages() => void;
 call CreateWindow() => void;
+
+print "%FORM_TEXT%CR%LF";
 
 while (%brun, -eq, true) {
     call CheckKey1() => void;
