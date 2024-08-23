@@ -3,7 +3,7 @@
 require "array";
 require "strings";
 
-static_array arrDomains string (
+array arrDomains string 3 (
 	"https://www.google.com", 
 	"https://www.microsoft.com", 
 	"https://store.steampowered.com"
@@ -44,4 +44,8 @@ if (%resultcount, -gr, 0) {
     print "Internet is available (%resultcount/%arrDomains.length succeeded).";
 } else {
     print "All connection attempts failed.";
+};
+
+if (%DNYAS_IS_INTERACTIVE_MODE, -eq, false) {
+	pause;
 };

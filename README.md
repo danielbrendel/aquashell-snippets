@@ -1,1 +1,63 @@
-# Useful snippets for AquaShell scripting and automation shell
+# AquaShell Snippets Collection
+
+## Description
+
+Here you can find some useful AquaShell scripts for various tasks.
+
+## Collection
+
+### checkinet.dnys
+
+This script checks if your Internet connection is available by attempting to connect to three different websites
+
+### clearfolder.dnys
+
+This script removes any file and folder in a directory including subfolders
+
+### commandline.dnys
+
+Some handy helper functions to parse arguments passed to scripts
+
+### datesync.dnys
+
+Tries to sync the local time via the used time server. Might require administrative privileges
+
+### datetime.dnys
+
+Contains useful functions for datetime management
+
+### fix_xampp_mysql.dnys
+
+Tries to fix mysql of an xampp installation when the bug occurs that it regularly shutdowns unexpectedly on start
+
+### genpw.dnys
+
+Generates a password by using PHP if installed. If no password is provided then it uses `test` as password
+
+### hfver.dnys
+
+Queries the HortusFox server in order to obtain the current release version
+
+### hots_chat_hotkeys.dnys
+
+A hotkey manager to quickly send chat messages while being in an ingame match
+
+### inputspeak.dnys
+
+A sample script to showcase using SAPI
+
+### ip.dnys
+
+Queries an internet server in order to obtain the current internet IP address
+
+### recursive.dnys
+
+Demonstration of recursive function calls
+
+### upgrade_dependencies.dnys
+
+Tries to run composer in various project directories in order to update their dependencies
+
+### winenv.dnys
+
+Shows the current environment variables in a listview

@@ -4,14 +4,14 @@
 require "array";
 require "fileio";
 
-const MYSQL_PATH string <= "C:\Users\Danny\Desktop\mysql";
+const MYSQL_PATH string <= "C:/path/to/mysql";
 
 global checkdir bool;
 global enumres bool;
 global copyres bool;
 global checkfile bool;
 
-static_array arrExcludedFolders string (
+array arrExcludedFolders string 4 (
 	"mysql", 
 	"performance_schema", 
 	"phpmyadmin", 

@@ -17,7 +17,6 @@ require "array";
 require "auto";
 require "fileio";
 require "forms";
-require "miscutils";
 require "strings";
 
 const WND_CLASS string <= "Heroes of the Storm";
@@ -28,7 +27,6 @@ const KEY_CODE_2 int <= 117; #F6
 const KEY_CODE_3 int <= 118; #F7
 const KEY_CODE_4 int <= 119; #F8
 const KEY_CODE_5 int <= 120; #F9
-const SIMULATE_RETURN bool <= true;
 const CONFIG_TOGGLE_SECTION_START int <= 4;
 
 global bres bool;
@@ -44,9 +42,6 @@ global switchcount int;
 global switchmsg string;
 global lasttimeactive bool;
 
-HWND targetwnd;
-HWND wndfg;
-
 set bres <= false;
 set brun <= true;
 set currentpath <= "";
@@ -60,7 +55,7 @@ set switchcount <= %CONFIG_TOGGLE_SECTION_START;
 set switchmsg <= "";
 set lasttimeactive <= true;
 
-dynamic_array arrConfigItems string 1 ("");
+array arrConfigItems string 0 ();
 
 getscriptpath currentpath;
 
@@ -68,9 +63,12 @@ set configpath <= {%currentpath%CONFIG_NAME};
 
 function GameWindowActive bool()
 {
+	local targetwnd int;
+	local wndfg int;
+
 	result false;
 	
-	aut_findwindow targetwnd "%WND_CLASS" \0;
+	aut_findwindow "%WND_CLASS" \0 targetwnd;
 	
 	if (%targetwnd, -gr, 0) {
 		aut_getfgwindow wndfg;
@@ -89,41 +87,38 @@ function btnSaveMessages_OnClick void()
 {
     local currentitem string;
 	local checkexists bool;
-	local findstr int;
+	local hfile int;
+	local fopres  bool;
 
     wnd_gettextboxtext frmMain txtMsg1 currentitem;
-    store_item_to_array_d "currentitem" arrConfigItems 0;
+    store_item_to_array "currentitem" arrConfigItems 0;
 
     wnd_gettextboxtext frmMain txtMsg2 currentitem;
-    store_item_to_array_d "currentitem" arrConfigItems 1;
+    store_item_to_array "currentitem" arrConfigItems 1;
 
     wnd_gettextboxtext frmMain txtMsg3 currentitem;
-    store_item_to_array_d "currentitem" arrConfigItems 2;
+    store_item_to_array "currentitem" arrConfigItems 2;
 
     wnd_gettextboxtext frmMain txtMsg4 currentitem;
-    store_item_to_array_d "currentitem" arrConfigItems 3;
+    store_item_to_array "currentitem" arrConfigItems 3;
 
 	set checkexists <= true;
 
-    sys {del /Q /F "%configpath"};
-
-    while (%checkexists, -eq, true) {
-		fexists "%configpath" checkexists;
-		sleep 1;
+	fexists "%configpath" checkexists;
+	if (%checkexists, -eq, true) {
+		fremove "%configpath" fopres;
 	};
-
-    for (i, 0, %arrConfigItems.length, -inc) {
-        set currentitem <= "%arrConfigItems[%i]";
-        if (%currentitem, -nt, "") {
-			s_find "%currentitem" "&" findstr;
-			if (%findstr, -gre, 0) {
-				s_replace currentitem "&" "^{$AMPERSAND}";
-				s_replace currentitem "{$AMPERSAND}" "&";
+	
+	fopen "%configpath" true hfile;
+	if (%hfile, -nt, %FIO_INVALID_HANDLE) {
+		for (i, 0, %arrConfigItems.length, -inc) {
+			if ("%arrConfigItems[%i]", -nt, "") {
+				fwriteline %hfile "%arrConfigItems[%i]";
 			};
-
-            sys {echo %currentitem>>"%configpath"};
-        };
-    };
+		};
+		
+		fclose %hfile;
+	};
 
 	print "Saved chat messages to: %configpath";
 };
@@ -176,18 +171,15 @@ function CreateWindow void()
     wnd_spawnform frmMain "%FORM_TEXT" 500 400 635 330 bres;
 
     wnd_spawnlabel frmMain "lblKey1" 20 10 20 30 "F5: ";
-    wnd_spawntextbox frmMain "txtMsg1" 50 10 550 20 "";
-
-    wnd_spawnlabel frmMain "lblKey2" 20 50 20 30 "F6: ";
-    wnd_spawntextbox frmMain "txtMsg2" 50 50 550 20 "";
-
-    wnd_spawnlabel frmMain "lblKey3" 20 90 20 30 "F7: ";
-    wnd_spawntextbox frmMain "txtMsg3" 50 90 550 20 "";
-
-    wnd_spawnlabel frmMain "lblKey4" 20 130 20 30 "F8: ";
-    wnd_spawntextbox frmMain "txtMsg4" 50 130 550 20 "";
-
+	wnd_spawnlabel frmMain "lblKey2" 20 50 20 30 "F6: ";
+	wnd_spawnlabel frmMain "lblKey3" 20 90 20 30 "F7: ";
+	wnd_spawnlabel frmMain "lblKey4" 20 130 20 30 "F8: ";
 	wnd_spawnlabel frmMain "lblKey5" 20 170 20 30 "F9: ";
+	
+    wnd_spawntextbox frmMain "txtMsg1" 50 10 550 20 "";
+    wnd_spawntextbox frmMain "txtMsg2" 50 50 550 20 "";
+    wnd_spawntextbox frmMain "txtMsg3" 50 90 550 20 "";
+    wnd_spawntextbox frmMain "txtMsg4" 50 130 550 20 "";
 	wnd_spawncombobox frmMain "cbHotKeyToggles" 50 170 550 1500;
 
 	wnd_spawnlabel frmMain "lblWndStatus" 20 215 350 30 "";
@@ -199,15 +191,12 @@ function CreateWindow void()
     wnd_settextboxtext frmMain txtMsg2 "%arrConfigItems[1]";
     wnd_settextboxtext frmMain txtMsg3 "%arrConfigItems[2]";
     wnd_settextboxtext frmMain txtMsg4 "%arrConfigItems[3]";
-
+	
 	for (cbcnt, %CONFIG_TOGGLE_SECTION_START, %arrConfigItems.length, -inc) {
 		wnd_cbadditem frmMain cbHotKeyToggles "%arrConfigItems[%cbcnt]";
 	};
 
 	wnd_cbgetcount frmMain cbHotKeyToggles cbselindex;
-	-- cbselindex;
-
-	wnd_cbremoveitem frmMain cbHotKeyToggles %cbselindex;
 
 	wnd_cbadditem frmMain cbHotKeyToggles "%switchmsg";
 	wnd_cbselectitem frmMain cbHotKeyToggles %cbselindex;
@@ -219,12 +208,13 @@ function SendText void(texttosend string)
 
 	print "Sending text: %texttosend ...";
 	
+	aut_sendkeystrokes {\VK_RETURN;} false false false kres;
+	sleep 1;
+	
 	aut_sendkeystrokes %texttosend false false false kres;
 
-	if (%SIMULATE_RETURN, -eq, true) {
-		aut_sendkeystrokes {\VK_RETURN;} false false false kres;
-		aut_sendkeystrokes {\VK_RETURN;} false false false kres;
-	};
+	sleep 1;
+	aut_sendkeystrokes {\VK_RETURN;} false false false kres;
 };
 
 function CheckKey1 void()
@@ -309,7 +299,7 @@ function CheckKey5 void()
 	local fixcount int;
 
 	set fixcount <= %arrConfigItems.length;
-	-= fixcount 2;
+	-- fixcount;
 	
 	aut_iskeydown %KEY_CODE_5 kdres;
 	

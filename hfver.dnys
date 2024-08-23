@@ -44,3 +44,7 @@ call query_hortusfox_version() => szHortusFoxVersion;
 print %szHortusFoxVersion;
 
 unset szHortusFoxVersion;
+
+if (%DNYAS_IS_INTERACTIVE_MODE, -eq, false) {
+	pause;
+};

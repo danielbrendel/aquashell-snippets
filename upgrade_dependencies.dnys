@@ -3,12 +3,12 @@
 require "array";
 require "auto";
 
-static_array arrProjects string (
-	"public_html/project-1", 
-    "public_html/project-2",
-    "public_html/project-3",
-    "public_html/project-4",
-    "public_html/project-5"
+array arrProjects string 5 (
+	"public_html/project-1",
+	"public_html/project-2", 
+	"public_html/project-3", 
+	"public_html/project-4",
+	"public_html/project-5"
 );
 
 function upgrade_dependencies void(folder string)

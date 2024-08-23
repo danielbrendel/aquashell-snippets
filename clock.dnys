@@ -1,7 +1,0 @@
-# Run timedate.cpl
-
-function clock void() {
-	sys { timedate.cpl };
-};
-
-call clock() => void;
