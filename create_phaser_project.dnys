@@ -1,0 +1,172 @@
+# Create a phaser project using Asatru PHP as backend web framework
+
+require "auto";
+require "input";
+require "fileio";
+require "strings";
+
+const PROJECT_DEFAULT_NAME string <= "new-phaser-project";
+
+global szProjectPath string;
+global szProjectName string;
+global szTempString string;
+global hFile int;
+global iStrLen int;
+global bResult bool;
+
+inputbox "Create Phaser project (1/2)" "Enter project path" "C:/projects" 400 500 szProjectPath;
+if (%szProjectPath, -eq, "") {
+    print "No path specified, aborting.";
+    pause;
+    exit;
+};
+
+inputbox "Create Phaser project (2/2)" "Enter project name" "%PROJECT_DEFAULT_NAME" 400 500 szProjectName;
+if (%szProjectName, -eq, "") {
+    print "No project name specified, aborting.";
+    pause;
+    exit;
+};
+
+s_replace "szProjectPath" {\} "/";
+
+s_getlen "%szProjectPath" iStrLen;
+-- iStrLen;
+s_getchar "%szProjectPath" %iStrLen "szTempString";
+if ("%szTempString", -nt, "/") {
+    set szProjectPath <= "%szProjectPath/";
+};
+
+dexists "%szProjectPath%szProjectName" bResult;
+if (%bResult, -eq, true) {
+    print "Error: A project with the given name already exists!";
+    pause;
+    exit;
+};
+
+print "Creating project '%szProjectPath%szProjectName'...";
+
+sys {composer create-project "danielbrendel/asatru-php" "%szProjectName" --ignore-platform-reqs --working-dir "%szProjectPath"};
+sys {composer update --ignore-platform-reqs --working-dir "%szProjectPath%szProjectName"};
+sys {cd /d "%szProjectPath%szProjectName" && npm install && npm i "phaser" && npm update};
+
+fexists "%szProjectPath%szProjectName/app/resources/sass/app.scss" bResult;
+if (%bResult, -eq, true) {
+    fremove "%szProjectPath%szProjectName/app/resources/sass/app.scss" bResult;
+};
+
+fopen "%szProjectPath%szProjectName/app/resources/sass/app.scss" true hFile;
+if (%hFile, -nt, %FILEIO_INVALID_HANDLE) {
+    fwriteline %hFile "html, body {";
+    fwriteline %hFile "    background-color: rgb(0, 0, 0);";
+    fwriteline %hFile "}";
+
+    fclose %hFile;
+};
+
+fexists "%szProjectPath%szProjectName/app/resources/js/app.js" bResult;
+if (%bResult, -eq, true) {
+    fremove "%szProjectPath%szProjectName/app/resources/js/app.js" bResult;
+};
+
+fopen "%szProjectPath%szProjectName/app/resources/js/app.js" true hFile;
+if (%hFile, -nt, %FILEIO_INVALID_HANDLE) {
+    fwriteline %hFile "import './../sass/app.scss';";
+    fwriteline %hFile "require('phaser');";
+
+    fclose %hFile;
+};
+
+dcreate "%szProjectPath%szProjectName/public/game" bResult;
+if (%bResult, -eq, false) {
+    print "Error: Failed to create game directory!";
+    pause;
+    exit;
+};
+
+fopen "%szProjectPath%szProjectName/public/game/game.js" true hFile;
+if (%hFile, -nt, %FILEIO_INVALID_HANDLE) {
+    fwriteline %hFile "class MyGame extends Phaser.Scene {";
+    fwriteline %hFile "        preload()";
+    fwriteline %hFile "        {";
+    fwriteline %hFile "        }";
+    fwriteline %hFile "";
+    fwriteline %hFile "        create()";
+    fwriteline %hFile "        {";
+    fwriteline %hFile "              this.txtHelloWorld = this.add.text(gameconfig.scale.width / 2 - 105, gameconfig.scale.height / 2, 'Hello World!', {color: 'rgb(255, 255, 255)',fontSize: '32px'});";
+    fwriteline %hFile "              this.txtHelloWorld.postFX.addGlow(0x00FF00, 4, 0, true, 0.1, 10)";
+    fwriteline %hFile "        }";
+    fwriteline %hFile "";
+    fwriteline %hFile "        update()";
+    fwriteline %hFile "        {";
+    fwriteline %hFile "        }";
+    fwriteline %hFile "}";
+    fwriteline %hFile "";
+    fwriteline %hFile "const gameconfig = {";
+    fwriteline %hFile "       type: Phaser.AUTO,";
+    fwriteline %hFile "       scene: MyGame,";
+    fwriteline %hFile "       physics: {";
+    fwriteline %hFile "          default: 'arcade',";
+    fwriteline %hFile "          arcade: {";
+    fwriteline %hFile "                gravity: { y: 300 },";
+    fwriteline %hFile "                debug: true";
+    fwriteline %hFile "           }";
+    fwriteline %hFile "       },";
+    fwriteline %hFile "        scale: {";
+    fwriteline %hFile "           mode: Phaser.Scale.FIT,";
+    fwriteline %hFile "           autoCenter: Phaser.Scale.CENTER_BOTH,";
+    fwriteline %hFile "           width: 1024,";
+    fwriteline %hFile "           height: 768";
+    fwriteline %hFile "     }";
+    fwriteline %hFile "};";
+
+    fclose %hFile;
+};
+
+fexists "%szProjectPath%szProjectName/app/views/layout.php" bResult;
+if (%bResult, -eq, true) {
+    fremove "%szProjectPath%szProjectName/app/views/layout.php" bResult;
+};
+
+fopen "%szProjectPath%szProjectName/app/views/layout.php" true hFile;
+if (%hFile, -nt, %FILEIO_INVALID_HANDLE) {
+    fwriteline %hFile "<!doctype html>";
+    fwriteline %hFile "<html lang='{{ getLocale() }}'>";
+    fwriteline %hFile "    <head>";
+    fwriteline %hFile "        <meta charset='utf-8'>";
+    fwriteline %hFile "        <meta name='viewport' content='width=device-with, initial-scale=1.0'>";
+    fwriteline %hFile "        ";
+    fwriteline %hFile "        <title>{{ ASATRU_FW_NAME }} powered Phaser.js project</title>";
+    fwriteline %hFile "";
+    fwriteline %hFile "        <script src='{{ asset('js/app.js') }}'></script>";
+    fwriteline %hFile "        <script src='{{ asset('game/game.js') }}'></script>";
+    fwriteline %hFile "    </head>";
+    fwriteline %hFile ""; 
+    fwriteline %hFile "    <body>";
+    fwriteline %hFile "        {%yield%}";
+    fwriteline %hFile "    </body>";
+    fwriteline %hFile "</html>";
+
+    fclose %hFile;
+};
+
+fexists "%szProjectPath%szProjectName/app/views/index.php" bResult;
+if (%bResult, -eq, true) {
+    fremove "%szProjectPath%szProjectName/app/views/index.php" bResult;
+};
+
+fopen "%szProjectPath%szProjectName/app/views/index.php" true hFile;
+if (%hFile, -nt, %FILEIO_INVALID_HANDLE) {
+    fwriteline %hFile "<script>";
+    fwriteline %hFile "    document.addEventListener('DOMContentLoaded', function() {";
+    fwriteline %hFile "        gameconfig.physics.arcade.debug = {{ env('APP_DEBUG') ? 'true' : 'false' }};";
+	fwriteline %hFile "        const game = new Phaser.Game(gameconfig);";
+    fwriteline %hFile "    });";
+    fwriteline %hFile "</script>";
+
+    fclose %hFile;
+};
+
+sys {cd /d "%szProjectPath%szProjectName" && npm run build};
+
+print "%CR%LFJob done%CR%LF";
