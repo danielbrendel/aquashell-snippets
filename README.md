@@ -18,6 +18,10 @@ This script removes any file and folder in a directory including subfolders
 
 Some handy helper functions to parse arguments passed to scripts
 
+### create_phaser_project.dnys
+
+Create a new phaser project using Asatru PHP as backend web framework
+
 ### datesync.dnys
 
 Tries to sync the local time via the used time server. Might require administrative privileges
