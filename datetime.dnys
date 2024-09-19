@@ -22,6 +22,28 @@ function datetime void() {
 	print "%curdatetime";
 };
 
+function seconds void()
+{
+	local curseconds string;
+	fmtdatetime "%S" curseconds;
+	print "%curseconds";
+};
+
+function secs void() { call seconds() => void; };
+
+function rsecs void()
+{
+	local curseconds string;
+	local intsecs int;
+
+	fmtdatetime "%S" curseconds;
+	set intsecs <= %curseconds;
+
+	- intsecs 60 %intsecs;
+
+	print %intsecs;
+};
+
 function weekday void(date string) {
 	local dayname string;
 	
