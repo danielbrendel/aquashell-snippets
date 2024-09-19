@@ -49,3 +49,7 @@ if (%resultcount, -gr, 0) {
 if (%DNYAS_IS_INTERACTIVE_MODE, -eq, false) {
 	pause;
 };
+
+unset resultcount;
+unset checkresult;
+free_array arrDomains;
