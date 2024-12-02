@@ -1,0 +1,64 @@
+# Speech API convenience class
+
+const SPEECH_DEFAULT_VOICE string <= "Microsoft Zira Desktop";
+
+class CSpeechAPI {
+	member mLocale string;
+	
+	method construct void()
+    {
+        set %this.mLocale <= "en";
+		spk_setvoice "%SPEECH_DEFAULT_VOICE";
+    };
+	
+	method setLocale bool(locale string)
+	{
+		result true;
+	
+		set %this.mLocale <= "%locale";
+		
+		if (%locale, -eq, "en") {
+			spk_setvoice "Microsoft Zira Desktop";
+		} elseif (%locale, -eq, "de") {
+			spk_setvoice "Microsoft Hedda Desktop";
+		} else {
+			result false;
+		};
+	};
+	
+	method setVolume void(volume int)
+	{
+		spk_setvolume %volume;
+	};
+	
+	method setPitch void(pitch int)
+	{
+		spk_setpitch %pitch;
+	};
+	
+	method setSpeed void(speed int)
+	{
+		spk_setspeed %speed;
+	};
+
+	method speak void(message string, asynchronous bool)
+	{
+		if (%asynchronous, -nt, true) {
+			spk_speak "%message";
+		} else {
+			spk_speakasync "%message";
+		};
+		
+		spk_setvoice "%SPEECH_DEFAULT_VOICE";
+	};
+	
+	method speak_s void(message string)
+	{
+		call @%this.speak("%message", 0) => void;
+	};
+	
+	method speak_a void(message string)
+	{
+		call @%this.speak("%message", 1) => void;
+	};
+};
