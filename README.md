@@ -58,6 +58,10 @@ Queries an internet server in order to obtain the current internet IP address
 
 Demonstration of recursive function calls
 
+### speech.dnys
+
+Convenience class for the Speech API
+
 ### upgrade_dependencies.dnys
 
 Tries to run composer in various project directories in order to update their dependencies
