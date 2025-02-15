@@ -1,0 +1,76 @@
+# Download YouTube video thumbnail to file
+
+require "input";
+require "strings";
+require "forms";
+
+global frmMain int;
+global bFormRes bool;
+global szVideoUrl string;
+set szVideoUrl <= "";
+
+function downloadToFile bool(url string, dest string)
+{
+	result false;
+	
+	local iSubStr int;
+	local szIdent string;
+	local szVideo string;
+	
+	s_find "%url" "?v=" iSubStr;
+
+	if (%iSubStr, -gre, 0) {
+		+= iSubStr 3;
+		s_substr "%url" "%iSubStr" "-1" "szIdent";
+		
+		set szVideo <= "https://img.youtube.com/vi/%szIdent/maxresdefault.jpg";
+		
+		sys { curl -o "%dest" "%szVideo"  --silent } szResponse;
+		
+		result true;
+	};
+};
+
+function btnSaveVideoThumbnail_OnClick void()
+{
+	local szTxtVideoUrl string;
+	local szTxtDestPath string;
+	local bDownloadResult bool;
+	
+	wnd_gettextboxtext frmMain txtVideoUrl szTxtVideoUrl;
+	wnd_gettextboxtext frmMain txtSaveDest szTxtDestPath;
+	
+	call downloadToFile("%szTxtVideoUrl", "%szTxtDestPath") => bDownloadResult;
+	
+	if (%bDownloadResult, -eq, true) {
+		wnd_setcomptext "frmMain" "CLabel" "lblResult" "Success!";
+	} else {
+		wnd_setcomptext "frmMain" "CLabel" "lblResult" "Error...";
+	};
+};
+
+wnd_spawnform "frmMain" "Download YouTube Thumbnail" 200 300 500 250 frmMain;
+
+wnd_isformvalid frmMain bFormRes;
+
+if (%bFormRes, -eq, false) {
+    print "Failed to create form.";
+    pause;
+    exit;
+};
+
+wnd_spawnlabel frmMain "lblVideoUrl" 20 10 50 20 "URL: ";
+wnd_spawntextbox frmMain "txtVideoUrl" 20 35 450 20 "https://www.youtube.com/watch?v=012345";
+
+wnd_spawnlabel frmMain "lblSaveDest" 20 75 50 20 "Dest: ";
+wnd_spawntextbox frmMain "txtSaveDest" 20 100 450 20 "%USERPROFILE%\Desktop\maxresdefault.jpg";
+
+wnd_spawnbutton frmMain "btnSaveVideoThumbnail" 20 155 200 30 "Save";
+
+wnd_spawnlabel frmMain "lblResult" 230 160 100 20 " ";
+
+while (%bFormRes, -eq, true) {
+    wnd_process;
+
+    wnd_isformvalid frmMain bFormRes;
+};

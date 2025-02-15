@@ -30,6 +30,10 @@ Tries to sync the local time via the used time server. Might require administrat
 
 Contains useful functions for datetime management
 
+### download_youtube_thumbnail.dnys
+
+Download YouTube video thumbnail to file
+
 ### fix_xampp_mysql.dnys
 
 Tries to fix mysql of an xampp installation when the bug occurs that it regularly shutdowns unexpectedly on start
