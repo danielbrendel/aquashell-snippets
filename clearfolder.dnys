@@ -2,10 +2,10 @@
 
 require "array";
 require "fileio";
-require "textinput";
+require "input";
 
-dynamic_array arrFiles string 1 ("");
-dynamic_array arrFolders string 1 ("");
+array arrFiles string 0 ();
+array arrFolders string 0 ();
 
 function EnumObjects int(baseObject string, iteratedObject string)
 {
@@ -13,10 +13,10 @@ function EnumObjects int(baseObject string, iteratedObject string)
     
     fdisdir "%baseObject%iteratedObject" dirtype;
     if (%dirtype, -eq, true) {
-        item_append arrFolders "%baseObject%iteratedObject";
+        array_item_append arrFolders "%baseObject%iteratedObject";
         denum {%baseObject%iteratedObject\} "*.*" "EnumObjects" void;
     } else {
-        item_append arrFiles "%baseObject%iteratedObject";
+        array_item_append arrFiles "%baseObject%iteratedObject";
     };
 
     result 1;
