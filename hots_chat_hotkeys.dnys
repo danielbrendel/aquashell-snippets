@@ -91,16 +91,16 @@ function btnSaveMessages_OnClick void()
 	local fopres  bool;
 
     wnd_gettextboxtext frmMain txtMsg1 currentitem;
-    store_item_to_array "currentitem" arrConfigItems 0;
+    array_item_set "currentitem" arrConfigItems 0;
 
     wnd_gettextboxtext frmMain txtMsg2 currentitem;
-    store_item_to_array "currentitem" arrConfigItems 1;
+    array_item_set "currentitem" arrConfigItems 1;
 
     wnd_gettextboxtext frmMain txtMsg3 currentitem;
-    store_item_to_array "currentitem" arrConfigItems 2;
+    array_item_set "currentitem" arrConfigItems 2;
 
     wnd_gettextboxtext frmMain txtMsg4 currentitem;
-    store_item_to_array "currentitem" arrConfigItems 3;
+    array_item_set "currentitem" arrConfigItems 3;
 
 	set checkexists <= true;
 
@@ -147,14 +147,14 @@ function LoadMessages void()
 
     s_tokenize "%filecontent" "%CR%LF" splittedmsgs;
     
-    item_insert arrConfigItems 0 "%splittedmsgs[0]";
-    item_insert arrConfigItems 1 "%splittedmsgs[1]";
-    item_insert arrConfigItems 2 "%splittedmsgs[2]";
-    item_insert arrConfigItems 3 "%splittedmsgs[3]";
+    array_item_insert arrConfigItems 0 "%splittedmsgs[0]";
+    array_item_insert arrConfigItems 1 "%splittedmsgs[1]";
+    array_item_insert arrConfigItems 2 "%splittedmsgs[2]";
+    array_item_insert arrConfigItems 3 "%splittedmsgs[3]";
 	
 	if (%splittedmsgs.count, -gre, %CONFIG_TOGGLE_SECTION_START) {
 		for (i, %CONFIG_TOGGLE_SECTION_START, %splittedmsgs.count, -inc) {
-			item_insert arrConfigItems %i "%splittedmsgs[%i]";
+			array_item_insert arrConfigItems %i "%splittedmsgs[%i]";
 		};
 	};
 
