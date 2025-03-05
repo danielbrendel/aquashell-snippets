@@ -24,6 +24,6 @@ for (i, 0, %arrProjects.length, -inc) {
 	call upgrade_dependencies(%arrProjects[%i]) => void;
 };
 
-free_array arrProjects;
+array_free arrProjects;
 
 print "Done.";
