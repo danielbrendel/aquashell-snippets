@@ -1,13 +1,18 @@
 # Show environment variables via GUI
 
+hideconsole;
+
 require "strings";
 require "forms";
 
+global wndstyles int;
 global frmMain int;
 global bres bool;
 global envcont string;
 
-wnd_spawnform "frmMain" "Windows Environment Variables" 200 300 500 350 frmMain;
+bitop "or" (%WS_OVERLAPPED, %WS_SYSMENU, %WS_VISIBLE) wndstyles;
+
+wnd_spawnform "frmMain" "Windows Environment Variables" 200 300 500 350 %wndstyles frmMain;
 
 wnd_isformvalid frmMain bres;
 

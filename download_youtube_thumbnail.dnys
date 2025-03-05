@@ -1,9 +1,12 @@
 # Download YouTube video thumbnail to file
 
+hideconsole;
+
 require "input";
 require "strings";
 require "forms";
 
+global wndstyles int;
 global frmMain int;
 global bFormRes bool;
 global szVideoUrl string;
@@ -49,7 +52,9 @@ function btnSaveVideoThumbnail_OnClick void()
 	};
 };
 
-wnd_spawnform "frmMain" "Download YouTube Thumbnail" 200 300 500 250 frmMain;
+bitop "or" (%WS_OVERLAPPED, %WS_SYSMENU, %WS_VISIBLE) wndstyles;
+
+wnd_spawnform "frmMain" "Download YouTube Thumbnail" 200 300 500 250 %wndstyles frmMain;
 
 wnd_isformvalid frmMain bFormRes;
 

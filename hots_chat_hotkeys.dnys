@@ -13,6 +13,8 @@
 # then the script will create a sample file that can be edited afterwards.
 #
 
+hideconsole;
+
 require "array";
 require "auto";
 require "fileio";
@@ -166,9 +168,12 @@ function LoadMessages void()
 
 function CreateWindow void()
 {
+	local wndstyles int;
 	local cbselindex int;
+	
+	bitop "or" (%WS_OVERLAPPED, %WS_SYSMENU, %WS_VISIBLE) wndstyles;
 
-    wnd_spawnform frmMain "%FORM_TEXT" 500 400 635 330 bres;
+    wnd_spawnform frmMain "%FORM_TEXT" 500 400 635 330 %wndstyles bres;
 
     wnd_spawnlabel frmMain "lblKey1" 20 10 20 30 "F5: ";
 	wnd_spawnlabel frmMain "lblKey2" 20 50 20 30 "F6: ";
