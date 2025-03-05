@@ -16,7 +16,7 @@ global INI_Verbose string;
 
 global frmMain int;
 global bres bool;
-global wsstyles int;
+global wndstyles int;
 global join_ok bool;
 global serverIdent string;
 global scriptpath string;
@@ -232,9 +232,9 @@ function btnSend_OnClick void()
 	};
 };
 
-bitop "or" (%WS_OVERLAPPED, %WS_SYSMENU, %WS_VISIBLE) wsstyles;
+bitop "or" (%WS_OVERLAPPED, %WS_SYSMENU, %WS_VISIBLE) wndstyles;
 
-wnd_spawnform "frmMain" "IRC Chat Client" 200 300 767 354 %wsstyles frmMain;
+wnd_spawnform "frmMain" "IRC Chat Client" 200 300 767 354 %wndstyles frmMain;
 wnd_isformvalid frmMain bres;
 
 wnd_setformicon "frmMain" "app.ico";
