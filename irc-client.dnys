@@ -1,0 +1,264 @@
+# Sample IRC chat client
+
+hideconsole;
+
+require "strings";
+require "forms";
+require "irc";
+require "ini";
+
+global INI_Server string;
+global INI_Port string;
+global INI_OAuthToken string;
+global INI_Username string;
+global INI_Channel string;
+global INI_Verbose string;
+
+global frmMain int;
+global bres bool;
+global wsstyles int;
+global join_ok bool;
+global serverIdent string;
+global scriptpath string;
+global verbose bool;
+
+set join_ok <= false;
+set serverIdent <= "";
+
+getscriptpath scriptpath;
+
+ini_read "%scriptpathsettings.ini" "settings" "server" INI_Server;
+ini_read "%scriptpathsettings.ini" "settings" "port" INI_Port;
+ini_read "%scriptpathsettings.ini" "settings" "oauth" INI_OAuthToken;
+ini_read "%scriptpathsettings.ini" "settings" "username" INI_Username;
+ini_read "%scriptpathsettings.ini" "settings" "channel" INI_Channel;
+ini_read "%scriptpathsettings.ini" "settings" "verbose" INI_Verbose;
+
+set verbose <= %INI_Verbose;
+
+function Util_FilterChatMessage string(content string)
+{
+	local raute int;
+	local result string;
+	
+	set result <= "";
+	
+	result "%result";
+	
+	s_find "%content" "PRIVMSG #" raute;
+	if (%raute, -gr, 0) {
+		local subtoken string;
+		
+		s_substr "%content" %raute -1 subtoken;
+		
+		if ("%subtoken", -nt, "") {
+			local colon int;
+			
+			s_find "%subtoken" ":" colon;
+			if (%colon, -gr, 0) {
+				++ colon;
+				
+				s_substr "%subtoken" %colon -1 result;
+				
+				result "%result";
+			};
+		};
+	};
+};
+
+function Util_FilterChatSender string(content string)
+{
+	local colon int;
+	local exclamation int;
+	local result string;
+	
+	set result <= "";
+	
+	result "%result";
+	
+	s_find "%content" ":" colon;
+	s_find "%content" "!" exclamation;
+	
+	if (%colon, -eq, 0) {
+		if (%exclamation, -gr, 1) {
+			local tokenlen int;
+			
+			set tokenlen <= %exclamation;
+			
+			++ colon;
+			-= tokenlen %colon;
+			
+			s_substr "%content" %colon %tokenlen result;
+			
+			result "%result";
+		};
+	};
+};
+
+function ProcessIrcThread bool()
+{
+	local threadircvalid bool;
+	
+	set threadircvalid <= true;
+	
+	while (%threadircvalid, -eq, true) {
+		irc_process irc;
+		irc_isvalid irc threadircvalid;
+	};
+	
+};
+
+function irc_OnConnected void()
+{
+	wnd_lbadditem "frmMain" "lstChat" "Connected to server";
+	
+	irc_send irc "PASS oauth:%INI_OAuthToken";
+	irc_send irc "NICK %INI_Username";
+	irc_send irc "JOIN #%INI_Channel";
+};
+
+function irc_OnRecieve void(message string)
+{
+	local find int;
+	local curdatetime string;
+	local subtext string;
+	
+	fmtdatetime "%Y-%m-%d %H:%M:%S" curdatetime;
+	
+	if (%verbose, -eq, true) {
+		wnd_lbadditem "frmMain" "lstChat" "[%curdatetime] **System** %message";
+	};
+	
+	s_find "%message" ":%INI_Username.tmi.twitch.tv 353" find;
+	
+	if (%find, -eq, 0) {
+		set join_ok <= true;
+		
+		wnd_lbadditem "frmMain" "lstChat" "[%curdatetime] **System** Successfully joined channel";
+		
+		s_find "%message" " :" find;
+		if (%find, -gr, 1) {
+			+= find 2;
+			s_substr "%message" %find -1 subtext;
+			
+			if (%subtext, -nt, "") {
+				s_tokenize "%subtext" " " userlist;
+				
+				for (i, 0, %userlist.count, -inc) {
+					wnd_lbadditem "frmMain" "lstUsers" "%userlist[%i]";
+				};
+			};
+		};
+	};
+	
+	if (%join_ok, -eq, true) {
+		s_find "%message" "PING" find;
+		if (%find, -eq, 0) {
+			local ping string;
+
+			s_substr "%message" 5 -1 ping;
+			set serverIdent <= "%ping";
+			
+			irc_send irc "PONG %ping";
+
+			if (%verbose, -eq, true) {
+				wnd_lbadditem "frmMain" "lstChat" "Pong: %ping";
+			};
+		};
+		
+		s_find "%message" "PRIVMSG #" find;
+		if (%find, -gr, 0) {
+			local chatMsg string;
+			local chatSender string;
+			local cmdchar int;
+			
+			call Util_FilterChatMessage("%message") => chatMsg;
+			call Util_FilterChatSender("%message") => chatSender;
+			
+			wnd_lbadditem "frmMain" "lstChat" "[%curdatetime] (%chatSender) %chatMsg";
+		};
+		
+		s_find "%message" ":tmi.twitch.tv 421" find;
+		if (%find, -eq, 0) {
+			local unknowncmd string;
+			local unlen int;
+			local unknwstartpos int;
+			
+			s_getlen "%INI_Username" unlen;
+			
+			set unknwstartpos <= 19;
+			+= unknwstartpos %unlen; 
+			
+			s_substr "%message" %unknwstartpos -1 unknowncmd;
+			
+			wnd_lbadditem "frmMain" "lstChat" "[%curdatetime] (tmi.twitch.tv) %unknowncmd";
+		};
+	};
+};
+
+function irc_OnDisconnected void()
+{
+	wnd_lbadditem "frmMain" "lstChat" "Disconnected from server";
+};
+
+function irc_OnError void(errorcode int)
+{
+	wnd_lbadditem "frmMain" "lstChat" "Error occured: %errorcode";
+};
+
+function btnSend_OnClick void()
+{
+	local inputtext string;
+	local curdatetime string;
+	local cmdpos int;
+	local cmdsubstr string;
+	
+	fmtdatetime "%Y-%m-%d %H:%M:%S" curdatetime;
+	wnd_gettextboxtext "frmMain" "txtInput" inputtext;
+	
+	if (%inputtext, -nt, "") {
+		s_find "%inputtext" "/" cmdpos;
+		
+		if (%cmdpos, -eq, 0) {
+			s_substr "%inputtext" 1 -1 cmdsubstr;
+			irc_send irc "%cmdsubstr";
+			wnd_lbadditem "frmMain" "lstChat" "[%curdatetime] (Command) %inputtext";
+		} else {
+			irc_send irc "PRIVMSG #%INI_Channel :%inputtext";
+			wnd_settextboxtext "frmMain" "txtInput" "";
+			
+			wnd_lbadditem "frmMain" "lstChat" "[%curdatetime] (%INI_Username) %inputtext";
+		};
+	};
+};
+
+bitop "or" (%WS_OVERLAPPED, %WS_SYSMENU, %WS_VISIBLE) wsstyles;
+
+wnd_spawnform "frmMain" "IRC Chat Client" 200 300 767 354 %wsstyles frmMain;
+wnd_isformvalid frmMain bres;
+
+wnd_setformicon "frmMain" "app.ico";
+
+wnd_spawnlistbox "frmMain" "lstChat" 1 1 600 300 "";
+wnd_spawnlistbox "frmMain" "lstUsers" 601 1 150 323 "";
+wnd_spawntextbox "frmMain" "txtInput" 1 292 512 20 "Enter text to send";
+wnd_spawnbutton "frmMain" "btnSend" 512 292 90 20 "Send";
+
+if (%bres, -eq, false) {
+    print "Failed to create form.";
+    pause;
+    exit;
+};
+
+irc_spawn irc "%INI_Server" %INI_Port bres;
+
+threadfunc ProcessIrcThread;
+
+while (%bres, -eq, true) {
+    wnd_process;
+
+    wnd_isformvalid frmMain bres;
+};
+
+irc_release irc;
+wnd_freeform frmMain;
