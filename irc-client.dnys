@@ -6,6 +6,7 @@ require "strings";
 require "forms";
 require "irc";
 require "ini";
+require "auto";
 
 global INI_Server string;
 global INI_Port string;
@@ -111,6 +112,8 @@ function ProcessIrcThread bool()
 function irc_OnConnected void()
 {
 	wnd_lbadditem "frmMain" "lstChat" "Connected to server";
+	
+	aut_addtimer tmrKeyCheck 100;
 	
 	irc_send irc "PASS oauth:%INI_OAuthToken";
 	irc_send irc "NICK %INI_Username";
@@ -232,6 +235,25 @@ function btnSend_OnClick void()
 	};
 };
 
+function tmrKeyCheck_OnElapsed bool()
+{
+	local keyflag bool;
+	local focushandle int;
+	local textboxhandle int;
+	
+	aut_iskeydown 13 keyflag;
+	if (%keyflag, -eq, true) {
+		wnd_getcurrentfocus focushandle;
+		wnd_getcomphandle "frmMain" "CTextbox" "txtInput" textboxhandle;
+		
+		if (%focushandle, -eq, %textboxhandle) {
+			call btnSend_OnClick() => void;
+		};
+	};
+	
+	result true;
+};
+
 bitop "or" (%WS_OVERLAPPED, %WS_SYSMENU, %WS_VISIBLE) wndstyles;
 
 wnd_spawnform "frmMain" "IRC Chat Client" 200 300 767 354 %wndstyles frmMain;
@@ -256,6 +278,7 @@ threadfunc ProcessIrcThread;
 
 while (%bres, -eq, true) {
     wnd_process;
+	aut_calctimers;
 
     wnd_isformvalid frmMain bres;
 };
