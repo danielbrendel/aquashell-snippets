@@ -8,9 +8,12 @@ require "irc";
 require "ini";
 require "auto";
 
+const FORM_TITLE string <= "IRC Chat Client";
+
 global INI_Server string;
 global INI_Port string;
 global INI_OAuthToken string;
+global INI_Caps string;
 global INI_Username string;
 global INI_Channel string;
 global INI_Verbose string;
@@ -28,12 +31,13 @@ set serverIdent <= "";
 
 getscriptpath scriptpath;
 
-ini_read "%scriptpathsettings.ini" "settings" "server" INI_Server;
-ini_read "%scriptpathsettings.ini" "settings" "port" INI_Port;
-ini_read "%scriptpathsettings.ini" "settings" "oauth" INI_OAuthToken;
-ini_read "%scriptpathsettings.ini" "settings" "username" INI_Username;
-ini_read "%scriptpathsettings.ini" "settings" "channel" INI_Channel;
-ini_read "%scriptpathsettings.ini" "settings" "verbose" INI_Verbose;
+ini_read "%scriptpath/settings.ini" "settings" "server" INI_Server;
+ini_read "%scriptpath/settings.ini" "settings" "port" INI_Port;
+ini_read "%scriptpath/settings.ini" "settings" "oauth" INI_OAuthToken;
+ini_read "%scriptpath/settings.ini" "settings" "caps" INI_Caps;
+ini_read "%scriptpath/settings.ini" "settings" "username" INI_Username;
+ini_read "%scriptpath/settings.ini" "settings" "channel" INI_Channel;
+ini_read "%scriptpath/settings.ini" "settings" "verbose" INI_Verbose;
 
 set verbose <= %INI_Verbose;
 
@@ -111,12 +115,18 @@ function ProcessIrcThread bool()
 
 function irc_OnConnected void()
 {
-	wnd_lbadditem "frmMain" "lstChat" "Connected to server";
+	wnd_setformtitle "frmMain" "%FORM_TITLE - Connected to %INI_Server";
+	wnd_appendtextboxtext "frmMain" "txtChat" "Connected to server";
 	
 	aut_addtimer tmrKeyCheck 100;
 	
 	irc_send irc "PASS oauth:%INI_OAuthToken";
-	irc_send irc "NICK %INI_Username";
+
+	if (%INI_Caps, -nt, "") {
+		irc_send irc "CAP REQ :%INI_Caps";
+	};
+
+	irc_send irc "NICK %INI_Username";	
 	irc_send irc "JOIN #%INI_Channel";
 };
 
@@ -129,7 +139,7 @@ function irc_OnRecieve void(message string)
 	fmtdatetime "%Y-%m-%d %H:%M:%S" curdatetime;
 	
 	if (%verbose, -eq, true) {
-		wnd_lbadditem "frmMain" "lstChat" "[%curdatetime] **System** %message";
+		wnd_appendtextboxtext "frmMain" "txtChat" "[%curdatetime] **System** %message";
 	};
 	
 	s_find "%message" ":%INI_Username.tmi.twitch.tv 353" find;
@@ -137,7 +147,8 @@ function irc_OnRecieve void(message string)
 	if (%find, -eq, 0) {
 		set join_ok <= true;
 		
-		wnd_lbadditem "frmMain" "lstChat" "[%curdatetime] **System** Successfully joined channel";
+		wnd_setformtitle "frmMain" "%FORM_TITLE - Joined #%INI_Channel";
+		wnd_appendtextboxtext "frmMain" "txtChat" "[%curdatetime] **System** Successfully joined channel";
 		
 		s_find "%message" " :" find;
 		if (%find, -gr, 1) {
@@ -165,7 +176,7 @@ function irc_OnRecieve void(message string)
 			irc_send irc "PONG %ping";
 
 			if (%verbose, -eq, true) {
-				wnd_lbadditem "frmMain" "lstChat" "Pong: %ping";
+				wnd_appendtextboxtext "frmMain" "txtChat" "Pong: %ping";
 			};
 		};
 		
@@ -178,7 +189,7 @@ function irc_OnRecieve void(message string)
 			call Util_FilterChatMessage("%message") => chatMsg;
 			call Util_FilterChatSender("%message") => chatSender;
 			
-			wnd_lbadditem "frmMain" "lstChat" "[%curdatetime] (%chatSender) %chatMsg";
+			wnd_appendtextboxtext "frmMain" "txtChat" "[%curdatetime] (%chatSender) %chatMsg";
 		};
 		
 		s_find "%message" ":tmi.twitch.tv 421" find;
@@ -194,19 +205,35 @@ function irc_OnRecieve void(message string)
 			
 			s_substr "%message" %unknwstartpos -1 unknowncmd;
 			
-			wnd_lbadditem "frmMain" "lstChat" "[%curdatetime] (tmi.twitch.tv) %unknowncmd";
+			wnd_appendtextboxtext "frmMain" "txtChat" "[%curdatetime] (tmi.twitch.tv) %unknowncmd";
 		};
 	};
 };
 
 function irc_OnDisconnected void()
 {
-	wnd_lbadditem "frmMain" "lstChat" "Disconnected from server";
+	wnd_setformtitle "frmMain" "%FORM_TITLE";
+	wnd_appendtextboxtext "frmMain" "txtChat" "Disconnected from server";
 };
 
 function irc_OnError void(errorcode int)
 {
-	wnd_lbadditem "frmMain" "lstChat" "Error occured: %errorcode";
+	wnd_appendtextboxtext "frmMain" "txtChat" "Error occured: %errorcode";
+};
+
+function lstUsers_OnDoubleClick void(item int)
+{
+	local selusername string;
+
+	wnd_lbgettext "frmMain" "lstUsers" %item selusername;
+
+	if (%selusername, -nt, "") {
+		wnd_settextboxtext "frmMain" "txtInput" "/PRIVMSG %selusername :";
+	};
+};
+
+function lstUsers_OnSelectionChange void(newItem int)
+{
 };
 
 function btnSend_OnClick void()
@@ -225,12 +252,14 @@ function btnSend_OnClick void()
 		if (%cmdpos, -eq, 0) {
 			s_substr "%inputtext" 1 -1 cmdsubstr;
 			irc_send irc "%cmdsubstr";
-			wnd_lbadditem "frmMain" "lstChat" "[%curdatetime] (Command) %inputtext";
+
+			wnd_settextboxtext "frmMain" "txtInput" "";
+			wnd_appendtextboxtext "frmMain" "txtChat" "[%curdatetime] (Command) %inputtext";
 		} else {
 			irc_send irc "PRIVMSG #%INI_Channel :%inputtext";
+
 			wnd_settextboxtext "frmMain" "txtInput" "";
-			
-			wnd_lbadditem "frmMain" "lstChat" "[%curdatetime] (%INI_Username) %inputtext";
+			wnd_appendtextboxtext "frmMain" "txtChat" "[%curdatetime] (%INI_Username) %inputtext";
 		};
 	};
 };
@@ -256,14 +285,15 @@ function tmrKeyCheck_OnElapsed bool()
 
 bitop "or" (%WS_OVERLAPPED, %WS_SYSMENU, %WS_VISIBLE) wndstyles;
 
-wnd_spawnform "frmMain" "IRC Chat Client" 200 300 767 354 %wndstyles frmMain;
+wnd_spawnform "frmMain" "%FORM_TITLE" 200 300 767 354 %wndstyles frmMain;
 wnd_isformvalid frmMain bres;
 
 wnd_setformicon "frmMain" "app.ico";
 
-wnd_spawnlistbox "frmMain" "lstChat" 1 1 600 300 "";
+wnd_spawntextbox "frmMain" "txtChat" 1 1 600 290 "";
+wnd_settextboxmultiline "frmMain" "txtChat";
 wnd_spawnlistbox "frmMain" "lstUsers" 601 1 150 323 "";
-wnd_spawntextbox "frmMain" "txtInput" 1 292 512 20 "Enter text to send";
+wnd_spawntextbox "frmMain" "txtInput" 1 292 512 20 "Hello from an AquaShell IRC client";
 wnd_spawnbutton "frmMain" "btnSend" 512 292 90 20 "Send";
 
 if (%bres, -eq, false) {

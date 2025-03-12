@@ -62,6 +62,10 @@ Queries an internet server in order to obtain the current internet IP address
 
 A sample and basic IRC chat client for Twitch IRC
 
+### mastodon-toot.dnys
+
+A sample script showcasing how to post media and status to a mastodon instance
+
 ### recursive.dnys
 
 Demonstration of recursive function calls

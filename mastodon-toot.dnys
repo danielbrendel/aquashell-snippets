@@ -1,0 +1,61 @@
+# Post status with media to Mastodon
+
+require "strings";
+
+const MASTODONBOT_SERVER_INSTANCE string <= "https://mastodon.social";
+const MASTODONBOT_ACCESS_TOKEN string <= "(your-access-token-here)";
+
+const TARGET_FILE string <= {C:/path/to/image};
+const STATUS_TEXT string <= "This is a Mastodon toot";
+
+global strResult string;
+global iStrPos int;
+global iStrStart int;
+global iStrLen int;
+global iLoop int;
+global bLoop bool;
+global strCurChar string;
+global strFileIdent string;
+
+sys {curl -X POST -F "file=@%TARGET_FILE" -H "Authorization: Bearer %MASTODONBOT_ACCESS_TOKEN" "%MASTODONBOT_SERVER_INSTANCE/api/v2/media" --silent} strResult;
+
+s_getlen %strResult iStrLen;
+
+s_find "%strResult" {"id":} iStrPos;
+if (%iStrPos, -gre, 1) {
+    set iStrStart <= %iStrPos;
+    += iStrStart 6;
+
+    set iLoop <= %iStrStart;
+    set bLoop <= true;
+
+    while (%bLoop, -eq, true) {
+        s_getchar "%strResult" %iLoop strCurChar;
+        
+        if (%strCurChar, -eq, ",") {
+            set bLoop <= false;
+        } else {
+            s_append strFileIdent %strCurChar;
+        };
+        
+        ++ iLoop;
+    };
+
+    s_getlen %strFileIdent iStrLen;
+    -- iStrLen;
+
+    s_substr "%strFileIdent" 0 %iStrLen strFileIdent;
+
+    sys {curl -X POST -F "status=%STATUS_TEXT" -F "media_ids[]=%strFileIdent" -F "visibility=public" -H "Authorization: Bearer %MASTODONBOT_ACCESS_TOKEN" "%MASTODONBOT_SERVER_INSTANCE/api/v1/statuses" --silent} strResult;
+
+    s_find "%strResult" "%STATUS_TEXT" iStrPos;
+    if (%iStrPos, -gre, 0) {
+        print "Status with media was posted successfully";
+    } else {
+        print "Failed to post status with media.";
+    };
+} else {
+    print "Error: File upload failed.";
+};
+
+pause;
