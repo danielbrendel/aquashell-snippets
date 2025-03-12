@@ -58,6 +58,10 @@ A sample script to showcase using SAPI
 
 Queries an internet server in order to obtain the current internet IP address
 
+### irc-client.dnys
+
+A sample and basic IRC chat client for Twitch IRC
+
 ### recursive.dnys
 
 Demonstration of recursive function calls
