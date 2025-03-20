@@ -29,9 +29,7 @@ function seconds void()
 	print "%curseconds";
 };
 
-function secs void() { call seconds() => void; };
-
-function rsecs void()
+function rsecs int()
 {
 	local curseconds string;
 	local intsecs int;
@@ -41,7 +39,27 @@ function rsecs void()
 
 	- intsecs 60 %intsecs;
 
-	print %intsecs;
+	result %intsecs;
+};
+
+function prsecs void()
+{
+	local remainingsecs int;
+	
+	call rsecs() => remainingsecs;
+
+	print %remainingsecs;
+};
+
+function slrs void()
+{
+	local remainingsecs int;
+	
+	call rsecs() => remainingsecs;
+	
+	*= remainingsecs 1000;
+	
+	sleep %remainingsecs;
 };
 
 function weekday void(date string) {
