@@ -27,7 +27,3 @@ function genenrate_password void()
 };
 
 call genenrate_password() => void;
-
-if (%DNYAS_IS_INTERACTIVE_MODE, -eq, false) {
-	pause;
-};
