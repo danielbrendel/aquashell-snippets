@@ -45,11 +45,3 @@ if (%resultcount, -gr, 0) {
 } else {
     print "All connection attempts failed.";
 };
-
-if (%DNYAS_IS_INTERACTIVE_MODE, -eq, false) {
-	pause;
-};
-
-unset resultcount;
-unset checkresult;
-free_array arrDomains;
