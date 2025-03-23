@@ -7,7 +7,3 @@ global ipaddr string;
 sys {curl "%SERVICE_URL" --silent} ipaddr;
 
 print "IP address: %ipaddr";
-
-if (%DNYAS_IS_INTERACTIVE_MODE, -eq, false) {
-	pause;
-};
