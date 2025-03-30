@@ -8,8 +8,6 @@ const MYSQL_PATH string <= "C:/path/to/mysql";
 
 global checkdir bool;
 global enumres bool;
-global copyres bool;
-global checkfile bool;
 
 array arrExcludedFolders string 4 (
 	"mysql", 
@@ -20,37 +18,44 @@ array arrExcludedFolders string 4 (
 
 print "Fixing files and folders...";
 
-dexists "%MYSQL_PATH\data_old" checkdir;
+dexists "%MYSQL_PATH/data_old" checkdir;
 if (%checkdir, -eq, true) {
-    sys {RMDIR /S /Q %MYSQL_PATH\data_old};
+    sys {rmdir /S /Q "%MYSQL_PATH/data_old"};
 };
 
-sys {move /Y %MYSQL_PATH\data %MYSQL_PATH\data_old};
-sys {xcopy /e /v %MYSQL_PATH\backup %MYSQL_PATH\data\};
+sys {move /Y "%MYSQL_PATH/data" "%MYSQL_PATH/data_old"};
+sys {xcopy "%MYSQL_PATH/backup" "%MYSQL_PATH/data/" /E /V /I /Y};
+
+function IsExcludeFolder bool(folderName string)
+{
+	result false;
+	
+	for (count, 0, %arrExcludedFolders.length, -inc) {
+		if (%folderName, -eq, %arrExcludedFolders[%count]) {
+			result true;
+		};
+	};
+};
 
 function CopyDbFolders int(baseObject string, iteratedObject string)
 {
     local dirtype bool;
+	local exclexists bool;
     
     fdisdir "%baseObject%iteratedObject" dirtype;
     if (%dirtype, -eq, true) {
-        for (count, 0, %arrExcludedFolders.length, -inc) {
-            if (%iteratedObject, -nt, %arrExcludedFolders[%count]) {
-                sys {xcopy /e /v /y %baseObject%iteratedObject %MYSQL_PATH\data\%iteratedObject\};
-            };
-        };
+		call IsExcludeFolder("%iteratedObject") => exclexists;
+	
+        if (%exclexists, -eq, false) {
+			sys {xcopy "%baseObject%iteratedObject" "%MYSQL_PATH/data/%iteratedObject" /E /V /I /Y};
+		};
     };
 
     result 1;
 };
 
-denum {%MYSQL_PATH\data_old\} "*.*" "CopyDbFolders" enumres;
+denum {%MYSQL_PATH/data_old/} "*.*" "CopyDbFolders" enumres;
 
-fexists "%MYSQL_PATH\data\ibdata1" checkfile;
-if (%checkfile, -eq, true) {
-    fremove "%MYSQL_PATH\data\ibdata1" void;
-};
-
-fcopy "%MYSQL_PATH\data_old\ibdata1" "%MYSQL_PATH\data\ibdata1" copyres;
+sys {robocopy "%MYSQL_PATH/data_old" "%MYSQL_PATH/data" "ibdata1" /NDL /NJH /NJS /NC /NS /IS};
 
 print "Done.";
