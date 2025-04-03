@@ -58,6 +58,10 @@ if (%bResult, -eq, true) {
 fopen "%szProjectPath%szProjectName/app/resources/sass/app.scss" true hFile;
 if (%hFile, -nt, %FILEIO_INVALID_HANDLE) {
     fwriteline %hFile "html, body {";
+	fwriteline %hFile "    width: 100%;";
+    fwriteline %hFile "    height: 100%;";
+    fwriteline %hFile "    margin: 0 auto;";
+    fwriteline %hFile "    overflow-y: hidden;";
     fwriteline %hFile "    background-color: rgb(0, 0, 0);";
     fwriteline %hFile "}";
 
