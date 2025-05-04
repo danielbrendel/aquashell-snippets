@@ -6,6 +6,10 @@ Here you can find some useful AquaShell scripts for various tasks.
 
 ## Collection
 
+### bluesky_api_pw.dnys
+
+This script can be used to acquire a new BlueSky API password automatically
+
 ### checkinet.dnys
 
 This script checks if your Internet connection is available by attempting to connect to three different websites

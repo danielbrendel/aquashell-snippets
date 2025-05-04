@@ -1,0 +1,135 @@
+# Acquire password token for Bluesky API
+
+hideconsole;
+
+require "input";
+require "strings";
+require "auto";
+require "forms";
+
+const BLUESKY_INSTANCE string <= "https://bsky.social";
+const BLUESKY_PASSWORD_NAME string <= "AquaShellRequest";
+const EM_SETPASSWORDCHAR int <= 204;
+const CHAR_ASTERISK int <= 42;
+
+global wndstyles int;
+global frmMain int;
+global bFormRes bool;
+global hTxtHandle int;
+
+function extractJsonValue string(content string, ident string)
+{
+	local iIdentLen int;
+	local iStrPos int;
+	local iStrLen int;
+	local iLoop int;
+	local bLoop bool;
+	local strCurChar string;
+	local szJsonValue string;
+
+	result "";
+	
+	set szJsonValue <= "";
+	
+	s_getlen "%ident" iIdentLen;
+	
+	s_find "%content" "%ident" iStrPos;
+	if (%iStrPos, -gr, 0) {
+		+= iStrPos %iIdentLen;
+		+= iStrPos 1;
+		
+		set iLoop <= %iStrPos;
+		set bLoop <= true;
+
+		while (%bLoop, -eq, true) {
+			s_getchar "%content" %iLoop strCurChar;
+			
+			if (%strCurChar, -eq, ",") {
+				set bLoop <= false;
+			} else {
+				s_append szJsonValue %strCurChar;
+			};
+			
+			++ iLoop;
+		};
+	};
+
+	result "%szJsonValue";
+};
+
+function acquireApiToken string(instance string, handle string, password string)
+{
+	result "";
+	
+	local szResponse string;
+	local szToken string;
+	local iStrContains int;
+	local szAppPwData string;
+	local szPassword string;
+	
+	sys { curl -X POST "%instance/xrpc/com.atproto.server.createSession" -H "Content-Type: application/json" -d "{\%QUOT_DOUBLEidentifier\%QUOT_DOUBLE:\%QUOT_DOUBLE%handle\%QUOT_DOUBLE,\%QUOT_DOUBLEpassword\%QUOT_DOUBLE:\%QUOT_DOUBLE%password\%QUOT_DOUBLE}" --silent} szResponse;
+	
+	call extractJsonValue("%szResponse", "accessJwt") => szToken;
+	
+	if ("%szToken", -nt, "") {
+		set szAppPwData <= {\%QUOT_DOUBLEname\%QUOT_DOUBLE:\%QUOT_DOUBLE%BLUESKY_PASSWORD_NAME\%QUOT_DOUBLE,\%QUOT_DOUBLEprivileged\%QUOT_DOUBLE:false};
+		set szAppPwData <= "{%szAppPwData}";
+		
+		sys { curl -X POST "%instance/xrpc/com.atproto.server.createAppPassword" -H "Content-Type: application/json" -H "Authorization: Bearer %szToken" -d "%szAppPwData" --silent} szResponse;
+		
+		call extractJsonValue("%szResponse", "password") => szPassword;
+		
+		if ("%szPassword", -nt, "") {
+			aut_clpbsetstring "%szPassword";
+			result "API password copied to clipboard!";
+		} else {
+			result "Instance did not return a password";
+		};
+	} else {
+		result "Instance did not return accessJwt";
+	};
+};
+
+function btnAcquireToken_OnClick void()
+{
+	local szTxtHandle string;
+	local szTxtPassword string;
+	local szResult string;
+	
+	wnd_gettextboxtext frmMain txtHandle szTxtHandle;
+	wnd_gettextboxtext frmMain txtPassword szTxtPassword;
+
+	call acquireApiToken("%BLUESKY_INSTANCE", "%szTxtHandle", "%szTxtPassword") => szResult;
+	
+	wnd_setcomptext "frmMain" "CLabel" "lblResult" "%szResult";
+};
+
+bitop "or" (%WS_OVERLAPPED, %WS_SYSMENU, %WS_VISIBLE) wndstyles;
+
+wnd_spawnform "frmMain" "Acquire Bluesky API password" 200 300 500 260 %wndstyles frmMain;
+
+wnd_isformvalid frmMain bFormRes;
+
+if (%bFormRes, -eq, false) {
+    print "Failed to create form.";
+    pause;
+    exit;
+};
+
+wnd_spawnlabel frmMain "lblHandle" 20 10 70 20 "Handle: ";
+wnd_spawntextbox frmMain "txtHandle" 20 35 450 20 "YourHandle.bsky.social";
+
+wnd_spawnlabel frmMain "lblPassword" 20 75 90 20 "Password: ";
+wnd_spawntextbox frmMain "txtPassword" 20 100 450 20 "";
+wnd_getcomphandle frmMain "CTextbox" "txtPassword" hTxtHandle;
+aut_sendmessage %hTxtHandle %EM_SETPASSWORDCHAR %CHAR_ASTERISK 0 void;
+
+wnd_spawnbutton frmMain "btnAcquireToken" 20 180 200 30 "Acquire";
+
+wnd_spawnlabel frmMain "lblResult" 20 140 450 20 " ";
+
+while (%bFormRes, -eq, true) {
+    wnd_process;
+
+    wnd_isformvalid frmMain bFormRes;
+};
