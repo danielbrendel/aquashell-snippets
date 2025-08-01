@@ -82,6 +82,10 @@ A sample script showcasing how to post media and status to a mastodon instance
 
 Demonstration of recursive function calls
 
+### reset-docker-wsl.dnys
+
+Reset docker WSL data in order to regain disk space
+
 ### speech.dnys
 
 Convenience class for the Speech API

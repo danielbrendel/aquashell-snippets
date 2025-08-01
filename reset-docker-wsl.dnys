@@ -1,0 +1,19 @@
+# Reset docker WSL data in order to regain disk space
+
+require "fileio";
+require "envvars";
+
+const DOCKER_EXT4_DISK_FILE string <= "%LOCALAPPDATA\Docker\wsl\data\ext4.vhdx"; 
+
+global bFileOperation bool;
+
+print "Resetting docker data...";
+
+fexists "%DOCKER_EXT4_DISK_FILE" bFileOperation;
+if (%bFileOperation, -eq, true) {
+	fremove "%DOCKER_EXT4_DISK_FILE" bFileOperation;
+};
+
+sys "wsl --unregister docker-desktop-data";
+
+print "Done.";
