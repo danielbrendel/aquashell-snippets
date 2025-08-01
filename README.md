@@ -46,6 +46,10 @@ Tries to fix mysql of an xampp installation when the bug occurs that it regularl
 
 Generates a password by using PHP if installed. If no password is provided then it uses `test` as password
 
+### gitgui.dnys
+
+A simple GUI to show basic git information of a local repository
+
 ### hfver.dnys
 
 Queries the HortusFox server in order to obtain the current release version
