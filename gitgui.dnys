@@ -1,0 +1,86 @@
+# A simple GUI to show basic git information of a local repository
+
+hideconsole;
+
+require "input";
+require "strings";
+require "fileio";
+require "auto";
+require "forms";
+
+global wndstyles int;
+global frmMain int;
+global bFormRes bool;
+
+function logMultilineText void(text string)
+{
+	s_tokenize "%text" "%CR%LF" arrTextTokens;
+
+	for (i, 0, %arrTextTokens.count, -inc) {
+		wnd_appendtextboxtext frmMain txtInfo "%arrTextTokens[%i]";
+	};
+	
+	wnd_appendtextboxtext frmMain txtInfo "";
+	
+	s_cleartokens arrTextTokens;
+};
+
+function btnGetInfo_OnClick void()
+{
+	local szTxtRepo string;
+	local bFolder bool;
+	local szResult string;
+	
+	wnd_gettextboxtext frmMain txtRepo szTxtRepo;
+	
+	dexists "%szTxtRepo/.git" bFolder;
+	
+	if (%bFolder, -eq, true) {
+		wnd_settextboxtext frmMain txtInfo "Acquiring info for repo: %szTxtRepo";
+		wnd_appendtextboxtext frmMain txtInfo "";
+	
+		sys { git -C "%szTxtRepo" status } szResult;
+		call logMultilineText("%szResult") => void;
+		
+		sys { git -C "%szTxtRepo" rev-list --count HEAD } szResult;
+		call logMultilineText("Commit count: %szResult") => void;
+		
+		call logMultilineText("Latest commit:") => void;
+		sys { git -C "%szTxtRepo" log -1 } szResult;
+		call logMultilineText("%szResult") => void;
+		
+		sys { git -C "%szTxtRepo" remote show origin } szResult;
+		call logMultilineText("%szResult") => void;
+		
+		sys { git -C "%szTxtRepo" branch -a } szResult;
+		call logMultilineText("%szResult") => void;
+	} else {
+		wnd_settextboxtext frmMain txtInfo "No git folder: %szTxtRepo";
+	};
+};
+
+bitop "or" (%WS_OVERLAPPED, %WS_SYSMENU, %WS_VISIBLE) wndstyles;
+
+wnd_spawnform "frmMain" "Git Repository Info" 200 300 500 360 %wndstyles frmMain;
+
+wnd_isformvalid frmMain bFormRes;
+
+if (%bFormRes, -eq, false) {
+    print "Failed to create form.";
+    pause;
+    exit;
+};
+
+wnd_spawnlabel frmMain "lblRepo" 20 10 70 20 "Repo: ";
+wnd_spawntextbox frmMain "txtRepo" 20 35 450 20 "C:/path/to/repo";
+
+wnd_spawntextbox frmMain "txtInfo" 20 75 450 190 "";
+wnd_settextboxmultiline frmMain "txtInfo";
+
+wnd_spawnbutton frmMain "btnGetInfo" 20 281 200 30 "Get info";
+
+while (%bFormRes, -eq, true) {
+    wnd_process;
+
+    wnd_isformvalid frmMain bFormRes;
+};
