@@ -1,0 +1,90 @@
+# A simple GUI to perform API requests on a HortusFox workspace
+
+hideconsole;
+
+require "strings";
+require "fileio";
+require "forms";
+require "speech";
+
+global curScriptPath string;
+global wndstyles int;
+global frmMain int;
+global bFormRes bool;
+
+getscriptpath curScriptPath;
+
+spk_setvoice "Microsoft Zira Desktop";
+spk_setvolume 100;
+
+function btnRun_OnClick void()
+{
+	local szTxtWorkspace string;
+	local szTxtApiKey string;
+	local szTxtEndpoint string;
+	local szResult string;
+	
+	wnd_gettextboxtext frmMain txtWorkspace szTxtWorkspace;
+	wnd_gettextboxtext frmMain txtApiKey szTxtApiKey;
+	wnd_gettextboxtext frmMain txtEndpoint szTxtEndpoint;
+	
+	sys {curl -H "Accept: application/json" -X POST -d "token=%szTxtApiKey" "%szTxtWorkspace/api/%szTxtEndpoint" --silent} szResult;
+	
+	wnd_settextboxtext frmMain txtResponse "%szResult";
+	
+	spk_speakasync "Request completed.";
+};
+
+function btnSave_OnClick void()
+{
+	local szTxtResponse string;
+	local hSaveFile int;
+	local bFileExists bool;
+	local bFileOp bool;
+	
+	wnd_gettextboxtext frmMain txtResponse szTxtResponse;
+	
+	fexists "%curScriptPath/hortusfox-api-gui.json" bFileExists;
+	if (%bFileExists, -eq, true) {
+		fremove "%curScriptPath/hortusfox-api-gui.json" bFileOp;
+	};
+	
+	fopen "%curScriptPath/hortusfox-api-gui.json" false hSaveFile;
+	fwritetext %hSaveFile "%szTxtResponse";
+	fclose %hSaveFile;
+	
+	spk_speakasync "Content saved.";
+};
+
+bitop "or" (%WS_OVERLAPPED, %WS_SYSMENU, %WS_VISIBLE) wndstyles;
+
+wnd_spawnform "frmMain" "HortusFox API GUI" 200 300 500 500 %wndstyles frmMain;
+
+wnd_isformvalid frmMain bFormRes;
+
+if (%bFormRes, -eq, false) {
+    print "Failed to create form.";
+    pause;
+    exit;
+};
+
+wnd_spawnlabel frmMain "lblWorkspace" 20 10 90 20 "Workspace: ";
+wnd_spawntextbox frmMain "txtWorkspace" 20 35 450 20 "http://localhost:8080";
+
+wnd_spawnlabel frmMain "lblApiKey" 20 70 70 20 "API Key: ";
+wnd_spawntextbox frmMain "txtApiKey" 20 95 450 20 "12345";
+
+wnd_spawnlabel frmMain "lblEndpoint" 20 130 70 20 "Endpoint: ";
+wnd_spawntextbox frmMain "txtEndpoint" 20 155 450 20 "";
+
+wnd_spawntextbox frmMain "txtResponse" 20 200 450 190 "";
+wnd_settextboxmultiline frmMain "txtResponse";
+
+wnd_spawnbutton frmMain "btnRun" 20 410 200 30 "Run";
+wnd_spawnbutton frmMain "btnSave" 269 410 200 30 "Save";
+
+while (%bFormRes, -eq, true) {
+    wnd_process;
+
+    wnd_isformvalid frmMain bFormRes;
+};
