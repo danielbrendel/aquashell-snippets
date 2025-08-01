@@ -54,6 +54,10 @@ A simple GUI to show basic git information of a local repository
 
 Queries the HortusFox server in order to obtain the current release version
 
+### hortusfox-api-gui.dnys
+
+A simple GUI to perform API requests on a HortusFox workspace
+
 ### hots_chat_hotkeys.dnys
 
 A hotkey manager to quickly send chat messages while being in an ingame match
