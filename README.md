@@ -78,6 +78,14 @@ A sample and basic IRC chat client for Twitch IRC
 
 A sample script showcasing how to post media and status to a mastodon instance
 
+### minecraft_chat_hotkeys.dnys
+
+A hotkey manager to quickly send chat messages while being ingame
+
+### palia_chat_hotkeys.dnys
+
+A hotkey manager to quickly send chat messages while being ingame
+
 ### recursive.dnys
 
 Demonstration of recursive function calls
