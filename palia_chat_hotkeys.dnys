@@ -1,0 +1,382 @@
+# Send chat messages to Palia via hotkeys
+#
+# This script features binding chat messages to the keys F5, F6, F7, F8 and F9 by default.
+# Key F5 - F8 are subject to single chat messages where key F9 will be subject to a switching
+# toggle. That means you can specify a dynamic amount of chat messages that will be iterated on
+# and once the end is reached, it will be starting over from the beginning again.
+
+# You can edit the chat messages via the GUI (except switching toggles). The script does also check
+# if the current foreground window is the window of the game in order to prevent that the chat messages 
+# are inserted elsewhere.
+#
+# Chat messages are stored in the text file defined via the constant CONFIG_NAME. If it does not exist
+# then the script will create a sample file that can be edited afterwards.
+#
+
+#hideconsole;
+
+require "array";
+require "auto";
+require "fileio";
+require "forms";
+require "strings";
+
+const WND_CLASS string <= "UnrealWindow";
+const CONFIG_NAME string <= "palia_messages.txt";
+const FORM_TEXT string <= "Palia Chat Hotkey Manager";
+const KEY_CODE_1 int <= 116; #F5
+const KEY_CODE_2 int <= 117; #F6
+const KEY_CODE_3 int <= 118; #F7
+const KEY_CODE_4 int <= 119; #F8
+const KEY_CODE_5 int <= 120; #F9
+const CONFIG_TOGGLE_SECTION_START int <= 4;
+
+global bres bool;
+global brun bool;
+global currentpath string;
+global configpath string;
+global keytoggle1 bool;
+global keytoggle2 bool;
+global keytoggle3 bool;
+global keytoggle4 bool;
+global keytoggle5 bool;
+global switchcount int;
+global switchmsg string;
+global lasttimeactive bool;
+
+set bres <= false;
+set brun <= true;
+set currentpath <= "";
+set configpath <= "";
+set keytoggle1 <= false;
+set keytoggle2 <= false;
+set keytoggle3 <= false;
+set keytoggle4 <= false;
+set keytoggle5 <= false;
+set switchcount <= %CONFIG_TOGGLE_SECTION_START;
+set switchmsg <= "";
+set lasttimeactive <= true;
+
+array arrConfigItems string 0 ();
+
+getscriptpath currentpath;
+
+set configpath <= {%currentpath%CONFIG_NAME};
+
+function GameWindowActive bool()
+{
+	local targetwnd int;
+	local wndfg int;
+
+	result false;
+	
+	aut_findwindow "%WND_CLASS" \0 targetwnd;
+	
+	if (%targetwnd, -gr, 0) {
+		aut_getfgwindow wndfg;
+		
+		if (%wndfg, -eq, %targetwnd) {
+			result true;
+		};
+	};
+};
+
+function cbHotKeyToggles_OnSelect void(newItem string)
+{
+};
+
+function btnSaveMessages_OnClick void()
+{
+    local currentitem string;
+	local checkexists bool;
+	local hfile int;
+	local fopres  bool;
+
+    wnd_gettextboxtext frmMain txtMsg1 currentitem;
+    array_item_set "currentitem" arrConfigItems 0;
+
+    wnd_gettextboxtext frmMain txtMsg2 currentitem;
+    array_item_set "currentitem" arrConfigItems 1;
+
+    wnd_gettextboxtext frmMain txtMsg3 currentitem;
+    array_item_set "currentitem" arrConfigItems 2;
+
+    wnd_gettextboxtext frmMain txtMsg4 currentitem;
+    array_item_set "currentitem" arrConfigItems 3;
+
+	set checkexists <= true;
+
+	fexists "%configpath" checkexists;
+	if (%checkexists, -eq, true) {
+		fremove "%configpath" fopres;
+	};
+	
+	fopen "%configpath" true hfile;
+	if (%hfile, -nt, %FIO_INVALID_HANDLE) {
+		for (i, 0, %arrConfigItems.length, -inc) {
+			if ("%arrConfigItems[%i]", -nt, "") {
+				fwriteline %hfile "%arrConfigItems[%i]";
+			};
+		};
+		
+		fclose %hfile;
+	};
+
+	print "Saved chat messages to: %configpath";
+};
+
+function btnExitScript_OnClick void()
+{
+    wnd_freeform frmMain;
+};
+
+function LoadMessages void()
+{
+    local filecontent string;
+    local chatcfgexists bool;
+	local cntnumber int;
+
+	fexists "%configpath" chatcfgexists;
+	if (%chatcfgexists, -eq, false) {
+		sys {echo ^(o_O^) Found the grove? ^(O_o^)>>"%configpath"};
+		sys {echo ^(o_O^) Found the event? ^(O_o^)>>"%configpath"};
+		sys {echo ^(= oOoOo Thank you oOoOo =^)>>"%configpath"};
+		sys {echo ^(._.^) !! Please wait !! ^(._.^)>>"%configpath"};
+		sys {echo -= Please add more switching messages =->>"%configpath"};
+	};
+
+    sys {type "%configpath"} filecontent;
+
+    s_tokenize "%filecontent" "%CR%LF" splittedmsgs;
+    
+    array_item_insert arrConfigItems 0 "%splittedmsgs[0]";
+    array_item_insert arrConfigItems 1 "%splittedmsgs[1]";
+    array_item_insert arrConfigItems 2 "%splittedmsgs[2]";
+    array_item_insert arrConfigItems 3 "%splittedmsgs[3]";
+	
+	if (%splittedmsgs.count, -gre, %CONFIG_TOGGLE_SECTION_START) {
+		for (i, %CONFIG_TOGGLE_SECTION_START, %splittedmsgs.count, -inc) {
+			array_item_insert arrConfigItems %i "%splittedmsgs[%i]";
+		};
+	};
+
+	set cntnumber <= %splittedmsgs.count;
+	-= cntnumber 4;
+
+	set switchmsg <= "(You have %cntnumber switching items)";
+};
+
+function CreateWindow void()
+{
+	local wndstyles int;
+	local cbselindex int;
+	
+	bitop "or" (%WS_OVERLAPPED, %WS_SYSMENU, %WS_VISIBLE) wndstyles;
+
+    wnd_spawnform frmMain "%FORM_TEXT" 500 400 635 330 %wndstyles bres;
+
+    wnd_spawnlabel frmMain "lblKey1" 20 10 20 30 "F5: ";
+	wnd_spawnlabel frmMain "lblKey2" 20 50 20 30 "F6: ";
+	wnd_spawnlabel frmMain "lblKey3" 20 90 20 30 "F7: ";
+	wnd_spawnlabel frmMain "lblKey4" 20 130 20 30 "F8: ";
+	wnd_spawnlabel frmMain "lblKey5" 20 170 20 30 "F9: ";
+	
+    wnd_spawntextbox frmMain "txtMsg1" 50 10 550 20 "";
+    wnd_spawntextbox frmMain "txtMsg2" 50 50 550 20 "";
+    wnd_spawntextbox frmMain "txtMsg3" 50 90 550 20 "";
+    wnd_spawntextbox frmMain "txtMsg4" 50 130 550 20 "";
+	wnd_spawncombobox frmMain "cbHotKeyToggles" 50 170 550 1500;
+
+	wnd_spawnlabel frmMain "lblWndStatus" 20 215 350 30 "";
+
+    wnd_spawnbutton frmMain "btnSaveMessages" 20 255 200 30 "Save";
+    wnd_spawnbutton frmMain "btnExitScript" 400 255 200 30 "Exit";
+
+    wnd_settextboxtext frmMain txtMsg1 "%arrConfigItems[0]";
+    wnd_settextboxtext frmMain txtMsg2 "%arrConfigItems[1]";
+    wnd_settextboxtext frmMain txtMsg3 "%arrConfigItems[2]";
+    wnd_settextboxtext frmMain txtMsg4 "%arrConfigItems[3]";
+	
+	for (cbcnt, %CONFIG_TOGGLE_SECTION_START, %arrConfigItems.length, -inc) {
+		wnd_cbadditem frmMain cbHotKeyToggles "%arrConfigItems[%cbcnt]";
+	};
+
+	wnd_cbgetcount frmMain cbHotKeyToggles cbselindex;
+
+	wnd_cbadditem frmMain cbHotKeyToggles "%switchmsg";
+	wnd_cbselectitem frmMain cbHotKeyToggles %cbselindex;
+};
+
+function SendText void(texttosend string)
+{
+	local kres bool;
+
+	print "Sending text: %texttosend ...";
+	
+    aut_keybdevent %VK_RETURN 0 0;
+	sleep 10;
+    aut_keybdevent %VK_RETURN 0 2;
+	sleep 10;
+
+	aut_sendkeystrokes %texttosend false false false kres;
+	sleep 10;
+
+	aut_keybdevent %VK_RETURN 0 0;
+    sleep 10;
+    
+    aut_keybdevent %VK_RETURN 0 2;
+    sleep 10;
+
+    aut_sendkeystrokes {\VK_RETURN;} false false false kres;
+};
+
+function CheckKey1 void()
+{
+	local kdres bool;
+	
+	aut_iskeydown %KEY_CODE_1 kdres;
+	
+	if (%kdres, -eq, true) {
+		if (%keytoggle1, -eq, false) {
+			call SendText("%arrConfigItems[0]") => void;
+		
+			set keytoggle1 <= true;
+		};
+	} else {
+		if (%keytoggle1, -eq, true) {
+			set keytoggle1 <= false;
+		};
+	};
+};
+
+function CheckKey2 void()
+{
+	local kdres bool;
+	
+	aut_iskeydown %KEY_CODE_2 kdres;
+	
+	if (%kdres, -eq, true) {
+		if (%keytoggle2, -eq, false) {
+			call SendText("%arrConfigItems[1]") => void;
+		
+			set keytoggle2 <= true;
+		};
+	} else {
+		if (%keytoggle2, -eq, true) {
+			set keytoggle2 <= false;
+		};
+	};
+};
+
+function CheckKey3 void()
+{
+	local kdres bool;
+	
+	aut_iskeydown %KEY_CODE_3 kdres;
+	
+	if (%kdres, -eq, true) {
+		if (%keytoggle3, -eq, false) {
+			call SendText("%arrConfigItems[2]") => void;
+		
+			set keytoggle3 <= true;
+		};
+	} else {
+		if (%keytoggle3, -eq, true) {
+			set keytoggle3 <= false;
+		};
+	};
+};
+
+function CheckKey4 void()
+{
+	local kdres bool;
+	
+	aut_iskeydown %KEY_CODE_4 kdres;
+	
+	if (%kdres, -eq, true) {
+		if (%keytoggle4, -eq, false) {
+			call SendText("%arrConfigItems[3]") => void;
+		
+			set keytoggle4 <= true;
+		};
+	} else {
+		if (%keytoggle4, -eq, true) {
+			set keytoggle4 <= false;
+		};
+	};
+};
+
+function CheckKey5 void()
+{
+	local kdres bool;
+	local fixcount int;
+
+	set fixcount <= %arrConfigItems.length;
+	-- fixcount;
+	
+	aut_iskeydown %KEY_CODE_5 kdres;
+	
+	if (%kdres, -eq, true) {
+		if (%keytoggle5, -eq, false) {
+			call SendText("%arrConfigItems[%switchcount]") => void;
+			
+			++ switchcount;
+			if (%switchcount, -gre, %fixcount) {
+				set switchcount <= %CONFIG_TOGGLE_SECTION_START;
+			};
+		
+			set keytoggle5 <= true;
+		};
+	} else {
+		if (%keytoggle5, -eq, true) {
+			set keytoggle5 <= false;
+		};
+	};
+};
+
+function UpdateGameWindowStatus void()
+{
+	local iswndactive bool;
+	local wndstatusmsg string;
+
+	call GameWindowActive() => iswndactive;
+	if (%iswndactive, -eq, true) {
+		if (%lasttimeactive, -eq, false) {
+			set wndstatusmsg <= "window found in foreground!";
+
+			wnd_setcomptext "frmMain" "CLabel" "lblWndStatus" "Game Status: %wndstatusmsg";
+			print "Game Status: %wndstatusmsg";
+
+			set lasttimeactive <= true;
+		};
+	} else {
+		if (%lasttimeactive, -eq, true) {
+			set wndstatusmsg <= "window not in foreground...";
+
+			wnd_setcomptext "frmMain" "CLabel" "lblWndStatus" "Game Status: %wndstatusmsg";
+			print "Game Status: %wndstatusmsg";
+
+			set lasttimeactive <= false;
+		};
+	};
+};
+
+call LoadMessages() => void;
+call CreateWindow() => void;
+
+print "%FORM_TEXT%CR%LF";
+
+while (%brun, -eq, true) {
+    call CheckKey1() => void;
+    call CheckKey2() => void;
+    call CheckKey3() => void;
+    call CheckKey4() => void;
+	call CheckKey5() => void;
+
+	call UpdateGameWindowStatus() => void;
+
+    wnd_process;
+    wnd_isformvalid frmMain brun;
+
+    sleep 1;
+};
