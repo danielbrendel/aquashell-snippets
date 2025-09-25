@@ -13,7 +13,7 @@
 # then the script will create a sample file that can be edited afterwards.
 #
 
-#hideconsole;
+hideconsole;
 
 require "array";
 require "auto";
