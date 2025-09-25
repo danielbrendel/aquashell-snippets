@@ -42,6 +42,7 @@ global keytoggle4 bool;
 global keytoggle5 bool;
 global switchcount int;
 global switchmsg string;
+global wndcurrentstatus bool;
 global lasttimeactive bool;
 
 set bres <= false;
@@ -359,11 +360,14 @@ call CreateWindow() => void;
 print "%FORM_TEXT%CR%LF";
 
 while (%brun, -eq, true) {
-    call CheckKey1() => void;
-    call CheckKey2() => void;
-    call CheckKey3() => void;
-    call CheckKey4() => void;
-	call CheckKey5() => void;
+	call GameWindowActive() => wndcurrentstatus;
+	if (%wndcurrentstatus, -eq, true) {
+		call CheckKey1() => void;
+		call CheckKey2() => void;
+		call CheckKey3() => void;
+		call CheckKey4() => void;
+		call CheckKey5() => void;
+	};
 
 	call UpdateGameWindowStatus() => void;
 
