@@ -1,6 +1,6 @@
 # Speak text entered via GUI input box
 
-require "input";
+require "dialog";
 require "speech";
 
 global inputspeakrun bool;
