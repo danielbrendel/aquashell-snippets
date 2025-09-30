@@ -2,7 +2,7 @@
 
 hideconsole;
 
-require "input";
+require "dialog";
 require "strings";
 require "auto";
 require "forms";
