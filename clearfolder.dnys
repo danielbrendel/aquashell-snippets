@@ -2,7 +2,7 @@
 
 require "array";
 require "fileio";
-require "input";
+require "dialog";
 
 array arrFiles string 0 ();
 array arrFolders string 0 ();
