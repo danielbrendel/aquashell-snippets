@@ -1,7 +1,7 @@
 # Create a phaser project using Asatru PHP as backend web framework
 
 require "auto";
-require "input";
+require "dialog";
 require "fileio";
 require "strings";
 
