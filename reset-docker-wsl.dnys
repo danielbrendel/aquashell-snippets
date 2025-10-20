@@ -1,7 +1,7 @@
 # Reset docker WSL data in order to regain disk space
 
 require "fileio";
-require "envvars";
+require "env";
 
 const DOCKER_EXT4_DISK_FILE string <= "%LOCALAPPDATA\Docker\wsl\data\ext4.vhdx"; 
 
