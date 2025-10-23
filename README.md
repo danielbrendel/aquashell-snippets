@@ -2,7 +2,7 @@
 
 ## Description
 
-Here you can find some useful AquaShell scripts for various tasks.
+Here you can find some useful [AquaShell](https://www.aquashell-scripting.com/) scripts for various tasks.
 
 ## Collection
 
